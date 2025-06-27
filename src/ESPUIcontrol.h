@@ -132,7 +132,7 @@ private:
     String OldValue = emptyString;
 
     // multiplier for converting a typical controller label or value to a Json object
-    #define JsonMarshalingRatio 3
+    #define JsonMarshalingRatio 5
     // Marshaed Control overhead length
     #define JsonMarshaledOverhead 64
 };
