@@ -111,7 +111,7 @@ public:
     unsigned int jsonChunkNumberMax = 5;
 #else
     unsigned int jsonInitialDocumentSize = 8000;
-    unsigned int jsonChunkNumberMax = 4;
+    unsigned int jsonChunkNumberMax = 12;
 #endif
     bool sliderContinuous = false;
     void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len);
