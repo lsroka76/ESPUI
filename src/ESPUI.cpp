@@ -18,6 +18,32 @@
 #endif
 #include "ESPUIcontrolMgr.h"
 
+// Optional user-defined JavaScript to be included in the UI.
+// Served at /js/custom.js, which is automatically included in index.htm.
+// js: JavaScript code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
+static const char* customJS = nullptr;
+
+// Optional user-defined CSS to be included in the UI.
+// Served at /css/custom.css, which is automatically included in index.htm.
+// css: CSS code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
+static const char* customCSS = nullptr;
+
+// Set custom JavaScript to be included in the UI.
+// js: JavaScript code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
+void ESPUIClass::setCustomJS(const char* js)
+{
+    customJS = js;
+    log_i("%s\n\r%s",customJS, js); 
+}
+
+// Set custom CSS to be included in the UI.
+// css: CSS code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
+void ESPUIClass::setCustomCSS(const char* css)
+{
+    customCSS = css;
+}
+
+
 static String heapInfo(const __FlashStringHelper* mode)
 {
     String result;
@@ -501,6 +527,16 @@ Control::ControlId_t ESPUIClass::addControl(Control::Type type,
     return id;
 }
 
+Control::ControlId_t ESPUIClass::addControlNoNotify(Control::Type type,
+    const char* label, const String& value, Control::Color color,
+    Control::ControlId_t parentControlId)
+{
+    Control::ControlId_t id = ESPUIcontrolMgr.addControl(type, label, value, color, parentControlId, true, (std::function<void(Control*, int)>)nullptr);
+    //NotifyClients(ClientUpdateType_t::RebuildNeeded);
+    return id;
+}
+
+
 bool ESPUIClass::removeControl(Control::ControlId_t id, bool force_rebuild_ui)
 {
     bool Response = ESPUIcontrolMgr.removeControl(id);
@@ -514,6 +550,25 @@ bool ESPUIClass::removeControl(Control::ControlId_t id, bool force_rebuild_ui)
     }
     return Response;
 } // removeControl
+
+
+uint16_t ESPUIClass::removeSelectOptions(Control::ControlId_t select_id,  Control::ControlId_t skip_id, bool force_rebuild_ui)
+{
+    uint16_t Response = ESPUIcontrolMgr.removeSelectOptions(select_id, skip_id);
+    if (force_rebuild_ui)
+    {
+        ESPUIcontrolMgr.RemoveToBeDeletedControls();
+	//ESPUI.jsonReload();
+    }
+    else
+    {
+        ESPUI.NotifyClients(ClientUpdateType_t::RebuildNeeded);
+
+    }
+    return Response;
+} // removeSelectOptions
+
+
 
 Control::ControlId_t ESPUIClass::label(const char* label, Control::Color color, const String& value)
 {
@@ -989,6 +1044,27 @@ void ESPUIClass::beginLITTLEFS(const char* _title, const char* username, const c
         }
     });
 
+
+   server->on("/js/custom.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (ESPUI.basicAuth && !request->authenticate(ESPUI.basicAuthUsername, ESPUI.basicAuthPassword))
+        {
+            return request->requestAuthentication();
+        }
+
+        request->send(200, "application/javascript", customJS ? customJS : "");
+	//log_i("%s", customJS);
+    });
+
+    server->on("/css/custom.css", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (ESPUI.basicAuth && !request->authenticate(ESPUI.basicAuthUsername, ESPUI.basicAuthPassword))
+        {
+            return request->requestAuthentication();
+        }
+
+        request->send(200, "text/css", customCSS ? customCSS : "");
+    });
+
+
     server->begin();
 
 #if defined(DEBUG_ESPUI)
@@ -1132,6 +1208,27 @@ void ESPUIClass::begin(const char* _title, const char* username, const char* pas
         }
 
         request->send(200, "text/plain", heapInfo(F("In Memorymode")));
+    });
+
+    server->on("/js/custom.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (ESPUI.basicAuth && !request->authenticate(ESPUI.basicAuthUsername, ESPUI.basicAuthPassword))
+        {
+            return request->requestAuthentication();
+        }
+
+        request->send(200, "application/javascript", customJS ? customJS : "");
+	if (customJS)
+	 log_i("%s", customJS);
+	else log_i("empty customJS");
+    });
+
+    server->on("/css/custom.css", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (ESPUI.basicAuth && !request->authenticate(ESPUI.basicAuthUsername, ESPUI.basicAuthPassword))
+        {
+            return request->requestAuthentication();
+        }
+
+        request->send(200, "text/css", customCSS ? customCSS : "");
     });
 
     server->onNotFound([this](AsyncWebServerRequest* request) {

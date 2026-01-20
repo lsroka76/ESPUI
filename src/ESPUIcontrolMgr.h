@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <ESPUI.h>
-#include <ESPUIcontrol.h>
+#include <ESPUIControl.h>
 
 // implemented as a singleton
 class _ESPUIcontrolMgr
@@ -21,6 +21,7 @@ public:
                                     bool visible,
                                     std::function<void(Control*, int)> callback);
     bool removeControl(Control::ControlId_t id);
+    uint16_t removeSelectOptions(Control::ControlId_t select_id,  Control::ControlId_t skip_id = 0xFFFF);
     void RemoveToBeDeletedControls();
 
     Control* getControl(Control::ControlId_t id);

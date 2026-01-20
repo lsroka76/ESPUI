@@ -1,7 +1,7 @@
 #pragma once
 
 // comment out to turn off debug output
-// #define DEBUG_ESPUI true
+#define DEBUG_ESPUI true
 #define WS_AUTHENTICATION false
 
 #include <Arduino.h>
@@ -134,10 +134,14 @@ public:
     Control::ControlId_t addControl(Control::Type type, const char* label, const String& value);
     Control::ControlId_t addControl(Control::Type type, const char* label, const String& value, Control::Color color);
     Control::ControlId_t addControl(Control::Type type, const char* label, const String& value, Control::Color color, Control::ControlId_t parentControlId);
+    Control::ControlId_t addControlNoNotify(Control::Type type, const char* label, const String& value, Control::Color color, Control::ControlId_t parentControlId);
+
     Control::ControlId_t addControl(Control::Type type, const char* label, const String& value, Control::Color color, Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback);
 
     bool removeControl(Control::ControlId_t id, bool force_rebuild_ui = false);
+    uint16_t removeSelectOptions(Control::ControlId_t select_id,  Control::ControlId_t skip_id = 0xFFFF, bool force_rebuild_ui = false);
 
+    
     // create Elements
     // Create Event Button
     Control::ControlId_t button(const char* label, std::function<void(Control*, int)> callback, Control::Color color, const String& value = "");
@@ -198,6 +202,17 @@ public:
     void setEnabled(Control::ControlId_t id, bool enabled = true, int clientId = -1);
 
     void updateVisibility(Control::ControlId_t id, bool visibility, int clientId = -1);
+
+    // Set optional user-defined JavaScript to be included in the UI.
+    // js: JavaScript code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
+    // This is intentionally not a String to avoid dynamic memory allocation.
+    void setCustomJS(const char* js);
+
+    // Set optional user-defined CSS to be included in the UI.
+    // css: CSS code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
+    // This is intentionally not a String to avoid dynamic memory allocation.
+    void setCustomCSS(const char* css);
+
 
     // Variables
     const char* ui_title = "ESPUI"; // Store UI Title and Header Name

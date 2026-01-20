@@ -375,7 +375,12 @@ bool ESPUIclient::SendJsonDocToWebSocket(JsonDocument& document)
             }
         #endif
         // Serial.println(F("ESPUIclient::SendJsonDocToWebSocket: client.text"));
-        client->text(json);
+	//Serial.printf("json length %u\n\r",json.length());
+	//Serial.printf("json _cstr length %u\n\r", strlen(json.c_str()));
+	//Serial.printf("last char %u\n\r", *(json.c_str() + strlen(json.c_str())));
+	//Serial.println(json);
+        //delay(500);
+	client->text(json);
 
     } while (false);
 

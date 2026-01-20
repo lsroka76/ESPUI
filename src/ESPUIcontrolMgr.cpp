@@ -1,5 +1,5 @@
 
-#include "ESPUIcontrolMgr.h"
+#include "ESPUIControlMgr.h"
 
 static Control::ControlId_t idCounter = 0;
 
@@ -106,11 +106,45 @@ bool _ESPUIcontrolMgr::removeControl(Control::ControlId_t id)
 #ifdef DEBUG_ESPUI
     else
     {
-        // Serial.println(String("Could not Remove Control ") + String(id));
+        //Serial.println(String("Could not Remove Control ") + String(id));
     }
 #endif // def DEBUG_ESPUI
 
     return Response;
+}
+
+uint16_t _ESPUIcontrolMgr::removeSelectOptions(Control::ControlId_t select_id, Control::ControlId_t skip_id)
+{
+    
+ #ifdef ESP32
+   xSemaphoreTake(ControlsSemaphore, portMAX_DELAY);
+#endif // !def ESP32
+  
+
+  uint16_t Response = 0;
+  ControlObject_t * CurrentControl = controls;
+
+  while (nullptr != CurrentControl)
+    {
+        if ((CurrentControl->parentControl == select_id) &&
+	    (CurrentControl->GetType() == Control::Type::Option) &&
+	     (CurrentControl->GetId() != skip_id))
+        {
+            CurrentControl->ToBeDeleted();
+    	    CurrentControl->callback = nullptr;
+            Response++;
+            controlCount--;
+         }
+        CurrentControl = CurrentControl->next;
+    }
+
+
+#ifdef ESP32
+  xSemaphoreGive(ControlsSemaphore);
+#endif // !def ESP32
+  
+
+  return Response;
 }
 
 
@@ -129,9 +163,9 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
     xSemaphoreTake(ControlsSemaphore, portMAX_DELAY);
 #endif // def ESP32
 
-    // Serial.println(String("prepareJSONChunk: Start.          InUpdateMode: ") + String(InUpdateMode));
-    // Serial.println(String("prepareJSONChunk: Start.            startindex: ") + String(startindex));
-    // Serial.println(String("prepareJSONChunk: Start. FragmentRequestString: '") + FragmentRequestString + "'");
+    //Serial.println(String("prepareJSONChunk: Start.          InUpdateMode: ") + String(InUpdateMode));
+    //Serial.println(String("prepareJSONChunk: Start.            startindex: ") + String(startindex));
+    //Serial.println(String("prepareJSONChunk: Start. FragmentRequestString: '") + FragmentRequestString + "'");
     int elementcount = 0;
     uint32_t MaxMarshaledJsonSize = (!InUpdateMode) ? ESPUI.jsonInitialDocumentSize: ESPUI.jsonUpdateDocumentSize;
     uint32_t EstimatedUsedMarshaledJsonSize = 0;
@@ -147,10 +181,10 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
 
         if(!emptyString.equals(FragmentRequestString))
         {
-            // Serial.println(F("prepareJSONChunk:Fragmentation:Got Header (1)"));
-            // Serial.println(String("prepareJSONChunk:startindex:                  ") + String(startindex));
-            // Serial.println(String("prepareJSONChunk:currentIndex:                ") + String(currentIndex));
-            // Serial.println(String("prepareJSONChunk:FragmentRequestString:      '") + FragmentRequestString + "'");
+             //Serial.println(F("prepareJSONChunk:Fragmentation:Got Header (1)"));
+             //Serial.println(String("prepareJSONChunk:startindex:                  ") + String(startindex));
+            //Serial.println(String("prepareJSONChunk:currentIndex:                ") + String(currentIndex));
+            //Serial.println(String("prepareJSONChunk:FragmentRequestString:      '") + FragmentRequestString + "'");
 
             // this is actually a fragment or directed update request
             // parse the string we got from the UI and try to update that specific
@@ -160,7 +194,7 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
             ArduinoJson::detail::sizeofObject(N);
             if(0 >= FragmentRequest.capacity())
             {
-                Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Could not allocate memory for a fragmentation request. Skipping Response"));
+                //Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Could not allocate memory for a fragmentation request. Skipping Response"));
                 break;
             }
 */
@@ -168,31 +202,31 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
             DeserializationError error = deserializeJson(FragmentRequest, FragmentRequestString.substring(FragmentRequestStartOffset));
             if(DeserializationError::Ok != error)
             {
-                Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Could not extract json from the fragment request"));
+                //Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Could not extract json from the fragment request"));
                 break;
             }
 
             if(!FragmentRequest.containsKey(F("id")))
             {
-                Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Request does not contain a control ID"));
+                //Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Request does not contain a control ID"));
                 break;
             }
             uint16_t ControlId = uint16_t(FragmentRequest[F("id")]);
 
             if(!FragmentRequest.containsKey(F("offset")))
             {
-                Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Request does not contain a starting offset"));
+                //Serial.println(F("ERROR:prepareJSONChunk:Fragmentation:Request does not contain a starting offset"));
                 break;
             }
             DataOffset = uint16_t(FragmentRequest[F("offset")]);
             CurrentControlObject = getControlObjectNoLock(ControlId);
             if(nullptr == CurrentControlObject)
             {
-                Serial.println(String(F("ERROR:prepareJSONChunk:Fragmentation:Requested control: ")) + String(ControlId) + F(" does not exist"));
+                //Serial.println(String(F("ERROR:prepareJSONChunk:Fragmentation:Requested control: ")) + String(ControlId) + F(" does not exist"));
                 break;
             }
 
-            // Serial.println(F("prepareJSONChunk:Fragmentation:disable the control search operation"));
+            //Serial.println(F("prepareJSONChunk:Fragmentation:disable the control search operation"));
             currentIndex = 1;
             startindex = 0;
             SingleControl = true;
@@ -224,7 +258,7 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
         // any controls left to be processed?
         if(nullptr == CurrentControlObject)
         {
-            // Serial.println("prepareJSONChunk: No controls to process");
+            //Serial.println("prepareJSONChunk: No controls to process");
             break;
         }
 
@@ -236,7 +270,7 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
             // skip deleted controls or controls that have not been updated
             if (CurrentControlObject->ToBeDeleted() && !SingleControl)
             {
-                // Serial.println(String("prepareJSONChunk: Ignoring Deleted control: ") + String(control->id));
+                // //Serial.println(String("prepareJSONChunk: Ignoring Deleted control: ") + String(Control->id));
                 CurrentControlObject = CurrentControlObject->next;
                 continue;
             }
@@ -255,33 +289,33 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
                 }
             }
 
-            // Serial.println(String(F("prepareJSONChunk: MaxMarshaledJsonSize: ")) + String(MaxMarshaledJsonSize));
-            // Serial.println(String(F("prepareJSONChunk: Cur EstimatedUsedMarshaledJsonSize: ")) + String(EstimatedUsedMarshaledJsonSize));
+            //Serial.println(String(F("prepareJSONChunk: MaxMarshaledJsonSize: ")) + String(MaxMarshaledJsonSize));
+            //Serial.println(String(F("prepareJSONChunk: Cur EstimatedUsedMarshaledJsonSize: ")) + String(EstimatedUsedMarshaledJsonSize));
 
             JsonObject item = AllocateJsonObject(items);
             elementcount++;
             uint32_t RemainingSpace = (MaxMarshaledJsonSize - EstimatedUsedMarshaledJsonSize) - 100;
-            // Serial.println(String(F("prepareJSONChunk: RemainingSpace: ")) + String(RemainingSpace));
+            //Serial.println(String(F("prepareJSONChunk: RemainingSpace: ")) + String(RemainingSpace));
             uint32_t SpaceUsedByMarshaledControl = 0;
             bool ControlIsFragmented = CurrentControlObject->MarshalControl(item,
                                                                InUpdateMode,
                                                                DataOffset,
                                                                RemainingSpace,
                                                                SpaceUsedByMarshaledControl);
-            // Serial.println(String(F("prepareJSONChunk: SpaceUsedByMarshaledControl: ")) + String(SpaceUsedByMarshaledControl));
+            //Serial.println(String(F("prepareJSONChunk: SpaceUsedByMarshaledControl: ")) + String(SpaceUsedByMarshaledControl));
             EstimatedUsedMarshaledJsonSize += SpaceUsedByMarshaledControl;
-            // Serial.println(String(F("prepareJSONChunk: New EstimatedUsedMarshaledJsonSize: ")) + String(EstimatedUsedMarshaledJsonSize));
-            // Serial.println(String(F("prepareJSONChunk:                ControlIsFragmented: ")) + String(ControlIsFragmented));
+            //Serial.println(String(F("prepareJSONChunk: New EstimatedUsedMarshaledJsonSize: ")) + String(EstimatedUsedMarshaledJsonSize));
+            //Serial.println(String(F("prepareJSONChunk:                ControlIsFragmented: ")) + String(ControlIsFragmented));
 
             // did the control get added to the doc?
             if (0 == SpaceUsedByMarshaledControl ||
                 (ESPUI.jsonChunkNumberMax > 0 && (elementcount % ESPUI.jsonChunkNumberMax) == 0))
             {
-                // Serial.println( String("prepareJSONChunk: too much data in the message. Remove the last entry"));
+                //Serial.println( String("prepareJSONChunk: too much data in the message. Remove the last entry"));
                 if (1 == elementcount)
                 {
-                    // Serial.println(String(F("prepareJSONChunk: Control ")) + String(control->id) + F(" is too large to be sent to the browser."));
-                    // Serial.println(String(F("ERROR: prepareJSONChunk: value: ")) + control->value);
+                    //Serial.println(String(F("prepareJSONChunk: Control ")) +/* String(Control->id)*/ + F(" is too large to be sent to the browser."));
+                    ////Serial.println(String(F("ERROR: prepareJSONChunk: value: ")) + control->value);
                     rootDoc.clear();
                     item = AllocateJsonObject(items);
                     CurrentControlObject->MarshalErrorMessage(item);
@@ -289,8 +323,8 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
                 }
                 else
                 {
-                    // Serial.println(String("prepareJSONChunk: Defering control: ") + String(control->id));
-                    // Serial.println(String("prepareJSONChunk: elementcount: ") + String(elementcount));
+                    ////Serial.println(String("prepareJSONChunk: Defering control: ") + String(Control->id));
+                    //Serial.println(String("prepareJSONChunk: elementcount: ") + String(elementcount));
 
                     items.remove(elementcount);
                     --elementcount;
@@ -302,12 +336,12 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
                      (ControlIsFragmented) ||
                      (MaxMarshaledJsonSize < (EstimatedUsedMarshaledJsonSize + 100)))
             {
-                // Serial.println("prepareJSONChunk: Doc is Full, Fragmented Control or Single Control. exit loop");
+                //Serial.println("prepareJSONChunk: Doc is Full, Fragmented Control or Single Control. exit loop");
                 CurrentControlObject = nullptr;
             }
             else
             {
-                // Serial.println("prepareJSONChunk: Next Control");
+                //Serial.println("prepareJSONChunk: Next Control");
                 CurrentControlObject = CurrentControlObject->next;
             }
         } // end while (control != nullptr)
@@ -318,7 +352,7 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
     xSemaphoreGive(ControlsSemaphore);
 #endif // def ESP32
 
-    // Serial.println(String("prepareJSONChunk: END: elementcount: ") + String(elementcount));
+    //Serial.println(String("prepareJSONChunk: END: elementcount: ") + String(elementcount));
     return elementcount;
 }
 
