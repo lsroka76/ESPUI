@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <ESPUI.h>
-#include <ESPUIControl.h>
+#include <ESPUIcontrol.h>
 
 // implemented as a singleton
 class _ESPUIcontrolMgr
