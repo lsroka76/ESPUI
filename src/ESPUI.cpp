@@ -671,7 +671,16 @@ uint32_t ESPUIClass::GetNextControlChangeId()
     return ++ControlChangeID;
 }
 
-void ESPUIClass::setPanelStyle(Control::ControlId_t id, const String& style, int clientId)
+/*void ESPUIClass::setPanelStyle(Control::ControlId_t id, const String& style, int clientId)
+{
+    Control* control = getControl(id);
+    if (control)
+    {
+        control->panelStyle = style;
+        updateControl(control, clientId);
+    }
+}*/
+void ESPUIClass::setPanelStyle(Control::ControlId_t id, const char *style, int clientId)
 {
     Control* control = getControl(id);
     if (control)
@@ -681,7 +690,7 @@ void ESPUIClass::setPanelStyle(Control::ControlId_t id, const String& style, int
     }
 }
 
-void ESPUIClass::setElementStyle(Control::ControlId_t id, const String& style, int clientId)
+void ESPUIClass::setElementStyle(Control::ControlId_t id, const char *style, int clientId)
 {
     Control* control = getControl(id);
     if (control)
@@ -691,7 +700,7 @@ void ESPUIClass::setElementStyle(Control::ControlId_t id, const String& style, i
     }
 }
 
-void ESPUIClass::setInputType(Control::ControlId_t id, const String& type, int clientId)
+void ESPUIClass::setInputType(Control::ControlId_t id, const char *type, int clientId)
 {
     Control* control = getControl(id);
     if (control)
@@ -706,7 +715,11 @@ void ESPUIClass::setPanelWide(Control::ControlId_t id, bool wide)
     Control* control = getControl(id);
     if (control)
     {
-        control->wide = wide;
+        if (wide)
+          control->control_flags |= CONTROL_FLAG_WIDE;
+        else
+          control->control_flags &= ~CONTROL_FLAG_WIDE;
+
     }
 }
 
@@ -716,7 +729,10 @@ void ESPUIClass::setEnabled(Control::ControlId_t id, bool enabled, int clientId)
     if (control)
     {
         // Serial.println(String("CreateAllowed: id: ") + String(clientId) + " State: " + String(enabled));
-        control->enabled = enabled;
+        if (enabled)
+          control->control_flags |= CONTROL_FLAG_ENABLED;
+        else
+          control->control_flags &= ~CONTROL_FLAG_ENABLED;
         updateControl(control, clientId);
     }
 }
@@ -726,7 +742,10 @@ void ESPUIClass::setVertical(Control::ControlId_t id, bool vert)
     Control* control = getControl(id);
     if (control)
     {
-        control->vertical = vert;
+        if (vert)
+          control->control_flags |= CONTROL_FLAG_VERTICAL;
+        else
+          control->control_flags &= ~CONTROL_FLAG_VERTICAL;
     }
 }
 
@@ -803,7 +822,10 @@ void ESPUIClass::updateVisibility(Control::ControlId_t id, bool visibility, int 
     Control* control = getControl(id);
     if (control)
     {
-        control->visible = visibility;
+        if (visibility)
+          control->control_flags |= CONTROL_FLAG_VISIBLE;
+        else
+          control->control_flags &= ~CONTROL_FLAG_VISIBLE;
         updateControl(control, clientId);
     }
 }

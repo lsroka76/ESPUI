@@ -10,13 +10,17 @@ Control::Control(Control::ControlId_t id, Control::Type type, const char* label,
       callback(callback),
       value(value),
       color(color),
-      visible(visible),
-      wide(false),
-      vertical(false),
-      enabled(true),
+      //visible(visible),
+      //wide(false),
+      //vertical(false),
+      //enabled(true),
       parentControl(parentControl)
 {
     ControlChangeID = 1;
+    control_flags = CONTROL_FLAG_ENABLED;
+    if (visible) control_flags |= CONTROL_FLAG_VISIBLE;
+    //value.reserve(128);
+    //value = PSTR("1");
 }
 
 Control::Control(const Control& Control)
@@ -26,10 +30,13 @@ Control::Control(const Control& Control)
       callback(Control.callback),
       value(Control.value),
       color(Control.color),
-      visible(Control.visible),
+      //visible(Control.visible),
       parentControl(Control.parentControl),
       ControlChangeID(Control.ControlChangeID)
-{ }
+{ 
+    if (Control.control_flags & CONTROL_FLAG_VISIBLE)
+      control_flags |= CONTROL_FLAG_VISIBLE;
+}
 
 void Control::SendCallback(int type)
 {
@@ -41,7 +48,8 @@ void Control::SendCallback(int type)
 
 void Control::DeleteControl()
 {
-    _ToBeDeleted = true;
+    //_ToBeDeleted = true;
+    control_flags |= CONTROL_FLAG_DELETED;
     callback = nullptr;
 }
 
@@ -146,15 +154,15 @@ bool Control::MarshalControl(JsonObject & _item,
 
     item[F("label")]   = label;
     item[F ("value")]  = (Control::Type::Password == type) ? F ("--------") : value.substring(StartingOffset, StartingOffset + ValueLenToSend);
-    item[F("visible")] = visible;
+    item[F("visible")] = control_flags & CONTROL_FLAG_VISIBLE;
     item[F("color")]   = (int)color;
-    item[F("enabled")] = enabled;
+    item[F("enabled")] = control_flags & CONTROL_FLAG_ENABLED;
 
-    if (!panelStyle.isEmpty())    {item[F("panelStyle")]    = panelStyle;}
-    if (!elementStyle.isEmpty())  {item[F("elementStyle")]  = elementStyle;}
-    if (!inputType.isEmpty())     {item[F("inputType")]     = inputType;}
-    if (wide == true)             {item[F("wide")]          = true;}
-    if (vertical == true)         {item[F("vertical")]      = true;}
+    if (panelStyle) {item[F("panelStyle")]    = panelStyle;}
+    if (elementStyle)  {item[F("elementStyle")]  = elementStyle;}
+    if (inputType)     {item[F("inputType")]     = inputType;}
+    if (control_flags & CONTROL_FLAG_WIDE) {item[F("wide")] = true;}
+    if (control_flags & CONTROL_FLAG_VERTICAL) {item[F("vertical")] = true;}
     if (parentControl != Control::noParent)
     {
         item[F("parentControl")] = String(parentControl);

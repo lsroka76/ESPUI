@@ -68,6 +68,12 @@ enum MessageTypes : uint8_t
 #define UI_EXTEND_GUI   MessageTypes::ExtendGUI
 #define UI_RELOAD       MessageTypes::Reload
 
+#define CONTROL_FLAG_ENABLED	(1 << 0)
+#define CONTROL_FLAG_VISIBLE	(1 << 1)
+#define CONTROL_FLAG_WIDE 	(1 << 2)
+#define CONTROL_FLAG_VERTICAL 	(1 << 3)
+#define CONTROL_FLAG_DELETED    (1 << 4)
+
 // Values
 #define B_DOWN -1
 #define B_UP 1
@@ -105,12 +111,12 @@ public:
     ESPUIClass()
     {
 	}
-    unsigned int jsonUpdateDocumentSize = 8000;
+    unsigned int jsonUpdateDocumentSize = 8192;
 #ifdef ESP8266
     unsigned int jsonInitialDocumentSize = 2000;
     unsigned int jsonChunkNumberMax = 5;
 #else
-    unsigned int jsonInitialDocumentSize = 8000;
+    unsigned int jsonInitialDocumentSize = 8192;
     unsigned int jsonChunkNumberMax = 2;
 #endif
     bool sliderContinuous = false;
@@ -193,9 +199,11 @@ public:
     void clearGraph(Control::ControlId_t id, int clientId = -1);
     void addGraphPoint(Control::ControlId_t id, int nValue, int clientId = -1);
 
-    void setPanelStyle(Control::ControlId_t id, const String& style, int clientId = -1);
-    void setElementStyle(Control::ControlId_t id, const String& style, int clientId = -1);
-    void setInputType(Control::ControlId_t id, const String& type, int clientId = -1);
+    //void setPanelStyle(Control::ControlId_t id, const String& style, int clientId = -1);
+void setPanelStyle(Control::ControlId_t id, const char *style, int clientId = -1);
+
+    void setElementStyle(Control::ControlId_t id, const char* style, int clientId = -1);
+    void setInputType(Control::ControlId_t id, const char *type, int clientId = -1);
 
     void setPanelWide(Control::ControlId_t id, bool wide);
     void setVertical(Control::ControlId_t id, bool vert = true);

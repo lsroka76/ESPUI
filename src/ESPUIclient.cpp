@@ -173,7 +173,7 @@ bool ESPUIclient::onWsEvent(AwsEventType type, void* arg, uint8_t* data, size_t 
 
         case WS_EVT_DATA:
         {
-            // Serial.println(F("ESPUIclient::OnWsEvent:WS_EVT_DATA"));
+            //Serial.println(F("ESPUIclient::OnWsEvent:WS_EVT_DATA"));
             String msg = "";
             msg.reserve(len + 1);
 
@@ -199,29 +199,29 @@ bool ESPUIclient::onWsEvent(AwsEventType type, void* arg, uint8_t* data, size_t 
             if (cmd.equals(F("uiok")))
             {
                 
-                // Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:ProcessAck:")) + pCurrentFsmState->GetStateName());
+                //Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:ProcessAck:")) + pCurrentFsmState->GetStateName());
                 pCurrentFsmState->ProcessAck(id, emptyString);
                 break;
             }
 
             if (cmd.equals(F("uifragmentok")))
             {
-                // Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:uifragmentok:")) + pCurrentFsmState->GetStateName() + ":ProcessAck");
+                //Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:uifragmentok:")) + pCurrentFsmState->GetStateName() + ":ProcessAck");
                 if(!emptyString.equals(value))
                 {
-                    // Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:uifragmentok:")) + pCurrentFsmState->GetStateName() + ":ProcessAck:value:'" +  value + "'");
+                    //Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:uifragmentok:")) + pCurrentFsmState->GetStateName() + ":ProcessAck:value:'" +  value + "'");
                     pCurrentFsmState->ProcessAck(uint16_t(-1), value);
                 }
                 else
                 {
-                    Serial.println(F("ERROR:ESPUIclient::OnWsEvent:WS_EVT_DATA:uifragmentok:ProcessAck:Fragment Header is missing"));
+                    //Serial.println(F("ERROR:ESPUIclient::OnWsEvent:WS_EVT_DATA:uifragmentok:ProcessAck:Fragment Header is missing"));
                 }
                 break;
             }
 
             if (cmd.equals(F("uiuok")))
             {
-                // Serial.println(F("WS_EVT_DATA: uiuok. Unlock new async notifications"));
+                //Serial.println(F("WS_EVT_DATA: uiuok. Unlock new async notifications"));
                 break;
             }
 
@@ -232,7 +232,7 @@ bool ESPUIclient::onWsEvent(AwsEventType type, void* arg, uint8_t* data, size_t 
                 #if defined(DEBUG_ESPUI)
                 if (ESPUI.verbosity)
                 {
-                    Serial.println(String(F("No control found for ID ")) + String(id));
+                    //Serial.println(String(F("No control found for ID ")) + String(id));
                 }
                 #endif
                 break;

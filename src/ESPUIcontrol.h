@@ -4,6 +4,8 @@
 #include <ArduinoJson.h>
 #include <functional>
 
+#define CONTROL_FLAG_DELETED    (1 << 4)
+
 class Control
 {
 public:
@@ -59,14 +61,14 @@ public:
     std::function<void(Control*, int)> callback;
     String value;
     Color color;
-    bool visible;
-    bool wide;
-    bool vertical;
-    bool enabled;
+    Type type = Type::Title;
     ControlId_t parentControl;
-    String panelStyle;
-    String elementStyle;
-    String inputType;
+
+    uint32_t control_flags;
+
+    const char *panelStyle = nullptr;
+    const char *elementStyle = nullptr;
+    const char *inputType = nullptr;
 
     static constexpr uint16_t noParent = 0xffff;
 
@@ -87,8 +89,8 @@ public:
     void MarshalErrorMessage(ArduinoJson::JsonObject& item);
     void DeleteControl();
     void onWsEvent(String& cmd, String& data);
-    inline bool ToBeDeleted() { return _ToBeDeleted; }
-    inline bool NeedsSync(uint32_t lastControlChangeID) {return (false == _ToBeDeleted) && (lastControlChangeID < ControlChangeID);}
+    inline bool ToBeDeleted() { return control_flags & CONTROL_FLAG_DELETED; }
+    inline bool NeedsSync(uint32_t lastControlChangeID) {return (!(control_flags & CONTROL_FLAG_DELETED)) && (lastControlChangeID < ControlChangeID);}
     void    SetControlChangedId(uint32_t value) {ControlChangeID = value;}
     inline ControlId_t GetId() {return id;}
     inline Type        GetType() {return type;}
@@ -124,12 +126,12 @@ public:
 #define COLOR_NONE          Control::Color::None
 
 private:
-    Type type = Type::Title;
+    //bool _ToBeDeleted = false;
+    
     ControlId_t id = Control::noParent;
 
-    bool _ToBeDeleted = false;
     uint32_t ControlChangeID = 0;
-    String OldValue = emptyString;
+    //String OldValue = emptyString;
 
     // multiplier for converting a typical controller label or value to a Json object
     #define JsonMarshalingRatio 5
