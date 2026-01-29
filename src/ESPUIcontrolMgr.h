@@ -20,6 +20,20 @@ public:
                                     Control::ControlId_t parentControl,
                                     bool visible,
                                     std::function<void(Control*, int)> callback);
+    Control::ControlId_t addControl(Control::Type type,
+                                    const char* label,
+                                    long value,
+                                    Control::Color color,
+                                    Control::ControlId_t parentControl,
+                                    bool visible,
+                                    std::function<void(Control*, int)> callback);
+     Control::ControlId_t addControl(Control::Type type,
+                                    const char* label,
+                                    const char* value,
+                                    Control::Color color,
+                                    Control::ControlId_t parentControl,
+                                    bool visible,
+                                    std::function<void(Control*, int)> callback);
     bool removeControl(Control::ControlId_t id);
     uint16_t removeSelectOptions(Control::ControlId_t select_id,  Control::ControlId_t skip_id = 0xFFFF);
     void RemoveToBeDeletedControls();
@@ -45,6 +59,25 @@ public:
                         Color color,
                         bool visible,
                         uint16_t parentControl);
+
+ControlObject_t(Control::ControlId_t id,
+                        Type type,
+                        const char* label,
+                        std::function<void(Control*, int)> callback,
+                        long value,
+                        Color color,
+                        bool visible,
+                        uint16_t parentControl);
+
+ControlObject_t(Control::ControlId_t id,
+                        Type type,
+                        const char* label,
+                        std::function<void(Control*, int)> callback,
+                        const char* value,
+                        Color color,
+                        bool visible,
+                        uint16_t parentControl);
+
 
         ControlObject_t * next = nullptr;
     }; // ControlObject_t

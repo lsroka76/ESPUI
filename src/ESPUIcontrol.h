@@ -59,7 +59,13 @@ public:
 
     const char* label;
     std::function<void(Control*, int)> callback;
-    String value;
+    //String value;
+    //char *value2;
+ union {
+    long numeric_value;
+    const char *cstr_value = nullptr;
+    String *string_value;
+};
     Color color;
     Type type = Type::Title;
     ControlId_t parentControl;
@@ -81,6 +87,24 @@ public:
             bool visible,
             uint16_t parentControl);
 
+    Control(ControlId_t id,
+            Type type,
+            const char* label,
+            std::function<void(Control*, int)> callback,
+            long value,
+            Color color,
+            bool visible,
+            uint16_t parentControl);
+
+    Control(ControlId_t id,
+            Type type,
+            const char* label,
+            std::function<void(Control*, int)> callback,
+            const char* value,
+            Color color,
+            bool visible,
+            uint16_t parentControl);
+
     Control(const Control& Control);
 
     void SendCallback(int type);
@@ -94,6 +118,9 @@ public:
     void    SetControlChangedId(uint32_t value) {ControlChangeID = value;}
     inline ControlId_t GetId() {return id;}
     inline Type        GetType() {return type;}
+    long getValueInt();
+    const char *getValueCstr();
+    const String &getValue();
 
 #define UI_TITLE            Control::Type::Title
 #define UI_LABEL            Control::Type::Label

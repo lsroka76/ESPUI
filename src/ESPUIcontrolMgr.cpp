@@ -366,6 +366,7 @@ Control::ControlId_t _ESPUIcontrolMgr::addControl(Control::Type type,
                                                   std::function<void(Control*, int)> callback)
 {
     // Create a Wrapper and a control
+
     ControlObject_t * NewControlObject  = new ControlObject_t(++idCounter, type, label, callback, value, color, visible, parentControl);
     NewControlObject->next = nullptr;
 
@@ -396,8 +397,102 @@ Control::ControlId_t _ESPUIcontrolMgr::addControl(Control::Type type,
     return NewControlObject->GetId();
 }
 
+
+Control::ControlId_t _ESPUIcontrolMgr::addControl(Control::Type type,
+                                                  const char* label,
+                                                  long value,
+                                                  Control::Color color,
+                                                  Control::ControlId_t parentControl,
+                                                  bool visible,
+                                                  std::function<void(Control*, int)> callback)
+{
+    // Create a Wrapper and a control
+
+    ControlObject_t * NewControlObject  = new ControlObject_t(++idCounter, type, label, callback, value, color, visible, parentControl);
+    NewControlObject->next = nullptr;
+
+#ifdef ESP32
+    xSemaphoreTake(ControlsSemaphore, portMAX_DELAY);
+#endif // def ESP32
+
+    if (controls == nullptr)
+    {
+        controls = NewControlObject;
+    }
+    else
+    {
+        ControlObject_t * iterator = controls;
+        while (iterator->next != nullptr)
+        {
+            iterator = iterator->next;
+        }
+        iterator->next = NewControlObject;
+    }
+
+    controlCount++;
+
+#ifdef ESP32
+    xSemaphoreGive(ControlsSemaphore);
+#endif // def ESP32
+
+    return NewControlObject->GetId();
+}
+
+Control::ControlId_t _ESPUIcontrolMgr::addControl(Control::Type type,
+                                                  const char* label,
+                                                  const char* value,
+                                                  Control::Color color,
+                                                  Control::ControlId_t parentControl,
+                                                  bool visible,
+                                                  std::function<void(Control*, int)> callback)
+{
+    // Create a Wrapper and a control
+
+    ControlObject_t * NewControlObject  = new ControlObject_t(++idCounter, type, label, callback, value, color, visible, parentControl);
+    NewControlObject->next = nullptr;
+
+#ifdef ESP32
+    xSemaphoreTake(ControlsSemaphore, portMAX_DELAY);
+#endif // def ESP32
+
+    if (controls == nullptr)
+    {
+        controls = NewControlObject;
+    }
+    else
+    {
+        ControlObject_t * iterator = controls;
+        while (iterator->next != nullptr)
+        {
+            iterator = iterator->next;
+        }
+        iterator->next = NewControlObject;
+    }
+
+    controlCount++;
+
+#ifdef ESP32
+    xSemaphoreGive(ControlsSemaphore);
+#endif // def ESP32
+
+    return NewControlObject->GetId();
+}
+
+
 _ESPUIcontrolMgr::ControlObject_t::ControlObject_t(Control::ControlId_t id, Control::Type type, const char* label, std::function<void(Control*, int)> callback,
     const String& value, Control::Color color, bool visible, ControlId_t parentControl)
+    : Control(id, type, label, callback, value, color, visible, parentControl)
+{}
+
+
+_ESPUIcontrolMgr::ControlObject_t::ControlObject_t(Control::ControlId_t id, Control::Type type, const char* label, std::function<void(Control*, int)> callback,
+    long value, Control::Color color, bool visible, ControlId_t parentControl)
+    : Control(id, type, label, callback, value, color, visible, parentControl)
+{}
+
+
+_ESPUIcontrolMgr::ControlObject_t::ControlObject_t(Control::ControlId_t id, Control::Type type, const char* label, std::function<void(Control*, int)> callback,
+    const char* value, Control::Color color, bool visible, ControlId_t parentControl)
     : Control(id, type, label, callback, value, color, visible, parentControl)
 {}
 

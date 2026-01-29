@@ -2,13 +2,17 @@
 
 static const String ControlError = "*** ESPUI ERROR: Could not transfer control ***";
 
+
+static String global_value;
+static bool global_value_reserve = true;
+ 
 Control::Control(Control::ControlId_t id, Control::Type type, const char* label, std::function<void(Control*, int)> callback,
     const String& value, Control::Color color, bool visible, ControlId_t parentControl)
     : id(id),
       type(type),
       label(label),
       callback(callback),
-      value(value),
+      //value(value),
       color(color),
       //visible(visible),
       //wide(false),
@@ -21,14 +25,131 @@ Control::Control(Control::ControlId_t id, Control::Type type, const char* label,
     if (visible) control_flags |= CONTROL_FLAG_VISIBLE;
     //value.reserve(128);
     //value = PSTR("1");
+    //log_i("label %s, type %u", label, type);
+    if (type == Control::Type::Label)
+     log_i("label size %u", value.length());
+
+    switch (type) {
+
+
+      case Option:
+      case Number:
+      case Select:
+      case Switcher:
+      case Slider: {
+        control_flags |= CONTROL_FLAG_NUMERIC;
+        numeric_value = value.toInt();}
+      break;
+
+
+      default:{
+	if (global_value_reserve) {
+         global_value_reserve = false;
+         global_value.reserve(1024);
+       }
+        string_value = new String();
+//if (type == Control::Type::Label)
+if (value.length() < 16)
+  string_value->reserve(16);
+        //log_i("string value ptr 0x%08X", string_value);
+        (*string_value) = value;
+      }
+  
+    }
 }
+
+Control::Control(Control::ControlId_t id, Control::Type type, const char* label, std::function<void(Control*, int)> callback,
+    long value, Control::Color color, bool visible, ControlId_t parentControl)
+    : id(id),
+      type(type),
+      label(label),
+      callback(callback),
+      //value(value),
+      color(color),
+      //visible(visible),
+      //wide(false),
+      //vertical(false),
+      //enabled(true),
+      parentControl(parentControl)
+{
+    ControlChangeID = 1;
+    control_flags = CONTROL_FLAG_ENABLED;
+    if (visible) control_flags |= CONTROL_FLAG_VISIBLE;
+    //value.reserve(128);
+    //value = PSTR("1");
+//log_i("label %s, type %u", label, type);
+
+
+    switch (type) {
+
+
+      case Option:
+      case Number:
+      case Select:
+      case Switcher:
+      case Slider: {
+        control_flags |= CONTROL_FLAG_NUMERIC;
+        numeric_value = value;}
+      break;
+
+
+      default: {
+
+        string_value = new String();
+        *string_value = String(value);
+       }
+  
+    }
+}
+
+Control::Control(Control::ControlId_t id, Control::Type type, const char* label, std::function<void(Control*, int)> callback,
+    const char* value, Control::Color color, bool visible, ControlId_t parentControl)
+    : id(id),
+      type(type),
+      label(label),
+      callback(callback),
+      //value(value),
+      color(color),
+      //visible(visible),
+      //wide(false),
+      //vertical(false),
+      //enabled(true),
+      parentControl(parentControl)
+{
+    ControlChangeID = 1;
+    control_flags = CONTROL_FLAG_ENABLED;
+    if (visible) control_flags |= CONTROL_FLAG_VISIBLE;
+    //value.reserve(128);
+    //value = PSTR("1");
+//log_i("label %s, type %u", label, type);
+
+    switch (type) {
+
+
+      case Option:
+      case Number:
+      case Select:
+      case Switcher:
+      case Slider: {
+        control_flags |= CONTROL_FLAG_NUMERIC;
+        numeric_value = strtol(value, nullptr, 0);}
+      break;
+
+
+      default:
+	control_flags |= CONTROL_FLAG_PCHAR;
+        cstr_value = value;
+  
+    }
+}
+
 
 Control::Control(const Control& Control)
     : type(Control.type),
       id(Control::noParent),
       label(Control.label),
       callback(Control.callback),
-      value(Control.value),
+      //value(Control.value),
       color(Control.color),
       //visible(Control.visible),
       parentControl(Control.parentControl),
@@ -36,6 +157,25 @@ Control::Control(const Control& Control)
 { 
     if (Control.control_flags & CONTROL_FLAG_VISIBLE)
       control_flags |= CONTROL_FLAG_VISIBLE;
+
+switch (Control.type) {
+
+
+      case Option:
+      case Number:
+       
+        numeric_value = Control.numeric_value;
+      break;
+
+
+      default: {
+
+        string_value = new String();
+        *string_value = *Control.string_value;
+      }
+  
+    }
+
 }
 
 void Control::SendCallback(int type)
@@ -46,12 +186,43 @@ void Control::SendCallback(int type)
     }
 }
 
+long Control::getValueInt(){
+
+  if (control_flags & CONTROL_FLAG_NUMERIC)
+    return numeric_value;
+  else
+   if (string_value)
+    return string_value->toInt();
+  return 0;
+}
+    
+const char *Control::getValueCstr() {
+
+  if (control_flags & CONTROL_FLAG_NUMERIC)
+    return nullptr;
+  else
+    if (string_value)
+     return string_value->c_str();
+  return nullptr;
+}
+
+const String &Control::getValue() {
+
+  if (control_flags & CONTROL_FLAG_NUMERIC)
+    return emptyString;
+  else
+    return *string_value;
+}
+
+
 void Control::DeleteControl()
 {
     //_ToBeDeleted = true;
     control_flags |= CONTROL_FLAG_DELETED;
     callback = nullptr;
+    if (string_value) delete string_value;
 }
+
 
 bool Control::MarshalControl(JsonObject & _item,
                              bool refresh,
@@ -68,8 +239,18 @@ bool Control::MarshalControl(JsonObject & _item,
     // create a new item in the response document
     JsonObject & item = _item;
 
+
+    if (control_flags & CONTROL_FLAG_NUMERIC)
+     global_value = numeric_value;
+    else 
+     if (control_flags & CONTROL_FLAG_PCHAR)
+      global_value = String(cstr_value);
+    else 
+      if (string_value)
+      global_value = *string_value;
+
     // how much space do we expect to use?
-    uint32_t ValueMarshaledLength   = (value.length() - StartingOffset) * JsonMarshalingRatio;
+    uint32_t ValueMarshaledLength   = (global_value.length() - StartingOffset) * JsonMarshalingRatio;
     uint32_t LabelMarshaledLength   = strlen(label) * JsonMarshalingRatio;
     uint32_t MinimumMarshaledLength = LabelMarshaledLength + JsonMarshaledOverhead;
     uint32_t MaximumMarshaledLength = ValueMarshaledLength + MinimumMarshaledLength;
@@ -92,13 +273,13 @@ bool Control::MarshalControl(JsonObject & _item,
     uint32_t MaxValueLength = (SpaceForMarshaledValue / JsonMarshalingRatio);
     //Serial.println(String("MarshalControl:           MaxValueLength: ") + String(MaxValueLength));
 
-    uint32_t ValueLenToSend = min((value.length() - StartingOffset), MaxValueLength);
+    uint32_t ValueLenToSend = min((global_value.length() - StartingOffset), MaxValueLength);
     //Serial.println(String("MarshalControl:           ValueLenToSend: ") + String(ValueLenToSend));
 
     uint32_t AdjustedMarshaledLength = (ValueLenToSend * JsonMarshalingRatio) + MinimumMarshaledLength;
     //Serial.println(String("MarshalControl:  AdjustedMarshaledLength: ") + String(AdjustedMarshaledLength));
 
-    bool NeedToFragment = (ValueLenToSend < value.length());
+    bool NeedToFragment = (ValueLenToSend < global_value.length());
     //Serial.println(String("MarshalControl:           NeedToFragment: ") + String(NeedToFragment));
 
     if ((AdjustedMarshaledLength > AvailMarshaledLength) && (0 != ValueLenToSend))
@@ -137,7 +318,7 @@ bool Control::MarshalControl(JsonObject & _item,
 
         _item[F("offset")] = StartingOffset;
         _item[F("length")] = ValueLenToSend;
-        _item[F("total")] = value.length();
+        _item[F("total")] = global_value.length();
         AllocateNamedJsonObject(item, _item, F("control"));
     }
 
@@ -153,7 +334,8 @@ bool Control::MarshalControl(JsonObject & _item,
     }
 
     item[F("label")]   = label;
-    item[F ("value")]  = (Control::Type::Password == type) ? F ("--------") : value.substring(StartingOffset, StartingOffset + ValueLenToSend);
+    item[F ("value")]  = (Control::Type::Password == type) ? 
+	F ("--------") : global_value.substring(StartingOffset, StartingOffset + ValueLenToSend);
     item[F("visible")] = control_flags & CONTROL_FLAG_VISIBLE;
     item[F("color")]   = (int)color;
     item[F("enabled")] = control_flags & CONTROL_FLAG_ENABLED;
@@ -177,7 +359,7 @@ bool Control::MarshalControl(JsonObject & _item,
         {
             item[F("selected")] = emptyString;
         }
-        else if (ParentControl->value == value)
+        else if (ParentControl->numeric_value == numeric_value)
         {
             item[F("selected")] = F("selected");
         }
@@ -284,30 +466,32 @@ void Control::onWsEvent(String & cmd, String& data)
         }
         else if (cmd.equals(F("sactive")))
         {
-            value = "1";
+            //value = "1";
+            numeric_value = 1;
             SendCallback(S_ACTIVE);
         }
         else if (cmd.equals(F("sinactive")))
         {
-            value = "0";
+            //value = "0";
+            numeric_value = 0;
             // updateControl(c, client->id());
             SendCallback(S_INACTIVE);
         }
         else if (cmd.equals(F("slvalue")))
         {
-            value = data;
+            numeric_value = data.toInt();
             // updateControl(c, client->id());
             SendCallback(SL_VALUE);
         }
         else if (cmd.equals(F("nvalue")))
         {
-            value = data;
+            numeric_value = data.toInt();
             // updateControl(c, client->id());
             SendCallback(N_VALUE);
         }
         else if (cmd.equals(F("tvalue")))
         {
-            value = data;
+            *string_value = data;
             // updateControl(c, client->id());
             SendCallback(T_VALUE);
         }
@@ -317,13 +501,13 @@ void Control::onWsEvent(String & cmd, String& data)
         }
         else if (cmd.equals(F("svalue")))
         {
-            value = data;
+            numeric_value = data.toInt();
             // updateControl(c, client->id());
             SendCallback(S_VALUE);
         }
         else if (cmd.equals(F("time")))
         {
-            value = data;
+            *string_value = data;
             // updateControl(c, client->id());
             SendCallback(TM_VALUE);
         }

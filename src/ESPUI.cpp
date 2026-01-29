@@ -18,6 +18,9 @@
 #endif
 #include "ESPUIcontrolMgr.h"
 
+static const char* emptyCstring = "";
+
+
 // Optional user-defined JavaScript to be included in the UI.
 // Served at /js/custom.js, which is automatically included in index.htm.
 // js: JavaScript code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
@@ -33,7 +36,7 @@ static const char* customCSS = nullptr;
 void ESPUIClass::setCustomJS(const char* js)
 {
     customJS = js;
-    log_i("%s\n\r%s",customJS, js); 
+    //log_i("%s\n\r%s",customJS, js); 
 }
 
 // Set custom CSS to be included in the UI.
@@ -518,6 +521,19 @@ const char* label, const String& value, Control::Color color, Control::ControlId
     return addControl(type, label, value, color, parentControlId, (std::function<void(Control*, int)>)nullptr);
 }
 
+
+Control::ControlId_t ESPUIClass::addControl(Control::Type type, const char* label, long value, Control::Color color, Control::ControlId_t parentControlId)
+{
+    return addControl(type, label, value, color, parentControlId, (std::function<void(Control*, int)>)nullptr);
+}
+
+
+Control::ControlId_t ESPUIClass::addControl(Control::Type type, const char* label, const char* value, Control::Color color, Control::ControlId_t parentControlId)
+{
+    return addControl(type, label, value, color, parentControlId, (std::function<void(Control*, int)>)nullptr);
+}
+
+
 Control::ControlId_t ESPUIClass::addControl(Control::Type type,
     const char* label, const String& value, Control::Color color,
     Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback)
@@ -527,12 +543,32 @@ Control::ControlId_t ESPUIClass::addControl(Control::Type type,
     return id;
 }
 
+
 Control::ControlId_t ESPUIClass::addControlNoNotify(Control::Type type,
     const char* label, const String& value, Control::Color color,
     Control::ControlId_t parentControlId)
 {
     Control::ControlId_t id = ESPUIcontrolMgr.addControl(type, label, value, color, parentControlId, true, (std::function<void(Control*, int)>)nullptr);
     //NotifyClients(ClientUpdateType_t::RebuildNeeded);
+    return id;
+}
+
+Control::ControlId_t ESPUIClass::addControl(Control::Type type,
+    const char* label, long value, Control::Color color,
+    Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback)
+{
+    Control::ControlId_t id = ESPUIcontrolMgr.addControl(type, label, value, color, parentControlId, true, callback);
+    NotifyClients(ClientUpdateType_t::RebuildNeeded);
+    return id;
+}
+
+
+Control::ControlId_t ESPUIClass::addControl(Control::Type type,
+    const char* label, const char* value, Control::Color color,
+    Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback)
+{
+    Control::ControlId_t id = ESPUIcontrolMgr.addControl(type, label, value, color, parentControlId, true, callback);
+    NotifyClients(ClientUpdateType_t::RebuildNeeded);
     return id;
 }
 
@@ -629,7 +665,7 @@ Control::ControlId_t ESPUIClass::gauge(const char* label, Control::Color color, 
 
 Control::ControlId_t ESPUIClass::separator(const char* label)
 {
-    return addControl(Control::Type::Separator, label, "", Control::Color::Alizarin, Control::noParent, nullptr);
+    return addControl(Control::Type::Separator, label, (const char*)emptyCstring, Control::Color::Alizarin, Control::noParent);
 }
 
 Control::ControlId_t ESPUIClass::fileDisplay(const char* label, Control::Color color, String filename)
@@ -773,8 +809,13 @@ void ESPUIClass::updateControlValue(Control* control, const String& value, int c
     {
         return;
     }
-
-    control->value = value;
+     
+    if (control->control_flags & CONTROL_FLAG_NUMERIC)
+     control->numeric_value = value.toInt();
+    else {
+      control->control_flags &= ~CONTROL_FLAG_PCHAR;
+      (*control->string_value) = value;
+    }
     updateControl(control, clientId);
 }
 
@@ -795,6 +836,73 @@ void ESPUIClass::updateControlValue(Control::ControlId_t id, const String& value
 
     updateControlValue(control, value, clientId);
 }
+
+void ESPUIClass::updateControlValue(Control* control, long value, int clientId)
+{
+    if (!control)
+    {
+        return;
+    }
+    //log_i("control->control_flags %0x04X, value %u", control->control_flags, value);
+    if (control->control_flags & CONTROL_FLAG_NUMERIC)
+     control->numeric_value = value;
+    else
+      (*(control->string_value)) = String(value);
+    updateControl(control, clientId);
+}
+
+void ESPUIClass::updateControlValue(Control::ControlId_t id, const long value, int clientId)
+{
+    Control* control = getControl(id);
+
+    if (!control)
+    {
+#if defined(DEBUG_ESPUI)
+        if (verbosity)
+        {
+            Serial.printf_P(PSTR("Error: updateControlValue Control: There is no control with ID %d\n"), id);
+        }
+#endif
+        return;
+    }
+
+    updateControlValue(control, value, clientId);
+}
+
+void ESPUIClass::updateControlValue(Control* control, const char* value, int clientId)
+{
+    if (!control)
+    {
+        return;
+    }
+     
+    if (control->control_flags & CONTROL_FLAG_NUMERIC)
+     control->numeric_value = strtol(value, nullptr, 0);
+    else {
+      control->control_flags |= CONTROL_FLAG_PCHAR;
+      control->cstr_value = value;
+    }
+    updateControl(control, clientId);
+}
+
+void ESPUIClass::updateControlValue(Control::ControlId_t id, const char* value, int clientId)
+{
+    Control* control = getControl(id);
+
+    if (!control)
+    {
+#if defined(DEBUG_ESPUI)
+        if (verbosity)
+        {
+            Serial.printf_P(PSTR("Error: updateControlValue Control: There is no control with ID %d\n"), id);
+        }
+#endif
+        return;
+    }
+
+    updateControlValue(control, value, clientId);
+}
+
 
 void ESPUIClass::updateControlLabel(Control::ControlId_t id, const char* value, int clientId)
 {
@@ -840,6 +948,11 @@ void ESPUIClass::updateLabel(Control::ControlId_t id, const String& value)
     updateControlValue(id, value);
 }
 
+void ESPUIClass::updateLabel(Control::ControlId_t id, const char* value)
+{
+    updateControlValue(id, value);
+}
+
 void ESPUIClass::updateButton(Control::ControlId_t id, const String& value)
 {
     updateControlValue(id, value);
@@ -847,17 +960,17 @@ void ESPUIClass::updateButton(Control::ControlId_t id, const String& value)
 
 void ESPUIClass::updateSlider(Control::ControlId_t id, int nValue, int clientId)
 {
-    updateControlValue(id, String(nValue), clientId);
+    updateControlValue(id, nValue, clientId);
 }
 
 void ESPUIClass::updateSwitcher(Control::ControlId_t id, bool nValue, int clientId)
 {
-    updateControlValue(id, String(nValue ? "1" : "0"), clientId);
+    updateControlValue(id, nValue ? 1 : 0, clientId);
 }
 
 void ESPUIClass::updateNumber(Control::ControlId_t id, int number, int clientId)
 {
-    updateControlValue(id, String(number), clientId);
+    updateControlValue(id, number, clientId);
 }
 
 void ESPUIClass::updateText(Control::ControlId_t id, const String& text, int clientId)
@@ -869,6 +982,12 @@ void ESPUIClass::updateSelect(Control::ControlId_t id, const String& text, int c
 {
     updateControlValue(id, text, clientId);
 }
+
+void ESPUIClass::updateSelect(Control::ControlId_t id, int value, int clientId)
+{
+    updateControlValue(id, value, clientId);
+}
+
 
 void ESPUIClass::updateGauge(Control::ControlId_t id, int number, int clientId)
 {
@@ -1239,9 +1358,9 @@ void ESPUIClass::begin(const char* _title, const char* username, const char* pas
         }
 
         request->send(200, "application/javascript", customJS ? customJS : "");
-	if (customJS)
-	 log_i("%s", customJS);
-	else log_i("empty customJS");
+	//if (customJS)
+	 //log_i("%s", customJS);
+	//else log_i("empty customJS");
     });
 
     server->on("/css/custom.css", HTTP_GET, [](AsyncWebServerRequest* request) {

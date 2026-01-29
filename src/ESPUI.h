@@ -73,6 +73,9 @@ enum MessageTypes : uint8_t
 #define CONTROL_FLAG_WIDE 	(1 << 2)
 #define CONTROL_FLAG_VERTICAL 	(1 << 3)
 #define CONTROL_FLAG_DELETED    (1 << 4)
+#define CONTROL_FLAG_NUMERIC    (1 << 5)
+#define CONTROL_FLAG_PCHAR      (1 << 6)
+
 
 // Values
 #define B_DOWN -1
@@ -144,6 +147,16 @@ public:
 
     Control::ControlId_t addControl(Control::Type type, const char* label, const String& value, Control::Color color, Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback);
 
+    Control::ControlId_t addControl(Control::Type type, const char* label, long value, Control::Color color, Control::ControlId_t parentControlId);
+
+    Control::ControlId_t addControl(Control::Type type, const char* label, long value, Control::Color color, Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback);
+
+    Control::ControlId_t addControl(Control::Type type, const char* label, const char *value, Control::Color color, Control::ControlId_t parentControlId);
+
+    Control::ControlId_t addControl(Control::Type type, const char* label, const char *value, Control::Color color, Control::ControlId_t parentControlId, std::function<void(Control*, int)> callback);
+
+
+
     bool removeControl(Control::ControlId_t id, bool force_rebuild_ui = false);
     uint16_t removeSelectOptions(Control::ControlId_t select_id,  Control::ControlId_t skip_id = 0xFFFF, bool force_rebuild_ui = false);
 
@@ -179,6 +192,13 @@ public:
     void updateControlValue(Control::ControlId_t id, const String& value, int clientId = -1);
     void updateControlValue(Control* control, const String& value, int clientId = -1);
 
+    void updateControlValue(Control::ControlId_t id, long value, int clientId = -1);
+    void updateControlValue(Control* control, long value, int clientId = -1);
+
+    void updateControlValue(Control::ControlId_t id, const char* value, int clientId = -1);
+    void updateControlValue(Control* control, const char* value, int clientId = -1);
+
+
     void updateControlLabel(Control::ControlId_t control, const char * value, int clientId = -1);
     void updateControlLabel(Control* control, const char * value, int clientId = -1);
 
@@ -187,12 +207,14 @@ public:
 
     void print(Control::ControlId_t id, const String& value);
     void updateLabel(Control::ControlId_t id, const String& value);
+    void updateLabel(Control::ControlId_t id, const char* value);
     void updateButton(Control::ControlId_t id, const String& value);
     void updateSwitcher(Control::ControlId_t id, bool nValue, int clientId = -1);
     void updateSlider(Control::ControlId_t id, int nValue, int clientId = -1);
     void updateNumber(Control::ControlId_t id, int nValue, int clientId = -1);
     void updateText(Control::ControlId_t id, const String& nValue, int clientId = -1);
     void updateSelect(Control::ControlId_t id, const String& nValue, int clientId = -1);
+    void updateSelect(Control::ControlId_t id, int nValue, int clientId = -1);
     void updateGauge(Control::ControlId_t id, int number, int clientId);
     void updateTime(Control::ControlId_t id, int clientId = -1);
 
@@ -231,6 +253,16 @@ void setPanelStyle(Control::ControlId_t id, const char *style, int clientId = -1
     uint32_t  GetNextControlChangeId();
     // emulate former extended callback API by using an intermediate lambda (no deprecation)
     Control::ControlId_t addControl(Control::Type type, const char* label, const String& value, Control::Color color, Control::ControlId_t parentControl, std::function<void(Control*, int, void*)> callback, void* userData)
+    {
+        return addControl(type, label, value, color, parentControl, [callback, userData](Control* sender, int type){ callback(sender, type, userData); });
+    }
+
+Control::ControlId_t addControl(Control::Type type, const char* label, long value, Control::Color color, Control::ControlId_t parentControl, std::function<void(Control*, int, void*)> callback, void* userData)
+    {
+        return addControl(type, label, value, color, parentControl, [callback, userData](Control* sender, int type){ callback(sender, type, userData); });
+    }
+
+Control::ControlId_t addControl(Control::Type type, const char* label, const char* value, Control::Color color, Control::ControlId_t parentControl, std::function<void(Control*, int, void*)> callback, void* userData)
     {
         return addControl(type, label, value, color, parentControl, [callback, userData](Control* sender, int type){ callback(sender, type, userData); });
     }
