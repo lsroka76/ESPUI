@@ -26,8 +26,8 @@ Control::Control(Control::ControlId_t id, Control::Type type, const char* label,
     //value.reserve(128);
     //value = PSTR("1");
     //log_i("label %s, type %u", label, type);
-    if (type == Control::Type::Label)
-     log_i("label size %u", value.length());
+    //if (type == Control::Type::Label)
+     //log_i("label size %u", value.length());
 
     switch (type) {
 
@@ -87,7 +87,10 @@ Control::Control(Control::ControlId_t id, Control::Type type, const char* label,
       case Number:
       case Select:
       case Switcher:
-      case Slider: {
+      case Slider:
+      case Min:
+      case Max:
+      case Gauge: {
         control_flags |= CONTROL_FLAG_NUMERIC;
         numeric_value = value;}
       break;
@@ -96,7 +99,7 @@ Control::Control(Control::ControlId_t id, Control::Type type, const char* label,
       default: {
 
         string_value = new String();
-        *string_value = String(value);
+        *string_value = value;
        }
   
     }
@@ -201,6 +204,9 @@ const char *Control::getValueCstr() {
   if (control_flags & CONTROL_FLAG_NUMERIC)
     return nullptr;
   else
+   if (control_flags & CONTROL_FLAG_PCHAR)
+    return cstr_value;
+  else 
     if (string_value)
      return string_value->c_str();
   return nullptr;
@@ -244,7 +250,7 @@ bool Control::MarshalControl(JsonObject & _item,
      global_value = numeric_value;
     else 
      if (control_flags & CONTROL_FLAG_PCHAR)
-      global_value = String(cstr_value);
+      global_value = cstr_value;
     else 
       if (string_value)
       global_value = *string_value;
@@ -334,8 +340,9 @@ bool Control::MarshalControl(JsonObject & _item,
     }
 
     item[F("label")]   = label;
-    item[F ("value")]  = (Control::Type::Password == type) ? 
+    global_value = (Control::Type::Password == type) ? 
 	F ("--------") : global_value.substring(StartingOffset, StartingOffset + ValueLenToSend);
+    item[F ("value")]  = global_value;
     item[F("visible")] = control_flags & CONTROL_FLAG_VISIBLE;
     item[F("color")]   = (int)color;
     item[F("enabled")] = control_flags & CONTROL_FLAG_ENABLED;
@@ -347,7 +354,7 @@ bool Control::MarshalControl(JsonObject & _item,
     if (control_flags & CONTROL_FLAG_VERTICAL) {item[F("vertical")] = true;}
     if (parentControl != Control::noParent)
     {
-        item[F("parentControl")] = String(parentControl);
+        item[F("parentControl")] = parentControl;
     }
 
     // special case for selects: to preselect an option, you have to add
@@ -385,7 +392,7 @@ void Control::MarshalErrorMessage(JsonObject & item)
 
     if (parentControl != Control::noParent)
     {
-        item[F("parentControl")] = String(parentControl);
+        item[F("parentControl")] = parentControl;
     }
 }
 

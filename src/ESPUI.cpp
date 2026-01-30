@@ -620,9 +620,9 @@ Control::ControlId_t ESPUIClass::slider(
     const char* label, std::function<void(Control*, int)> callback, Control::Color color, int value, int min, int max)
 {
     Control::ControlId_t sliderId
-        = addControl(Control::Type::Slider, label, String(value), color, Control::noParent, callback);
-    addControl(Control::Type::Min, label, String(min), Control::Color::None, sliderId);
-    addControl(Control::Type::Max, label, String(max), Control::Color::None, sliderId);
+        = addControl(Control::Type::Slider, label, value, color, Control::noParent, callback);
+    addControl(Control::Type::Min, label, min, Control::Color::None, sliderId);
+    addControl(Control::Type::Max, label, max, Control::Color::None, sliderId);
     return sliderId;
 }
 
@@ -649,17 +649,17 @@ Control::ControlId_t ESPUIClass::padWithCenter(const char* label, std::function<
 Control::ControlId_t ESPUIClass::number(
     const char* label, std::function<void(Control*, int)> callback, Control::Color color, int number, int min, int max)
 {
-    Control::ControlId_t numberId = addControl(Control::Type::Number, label, String(number), color, Control::noParent, callback);
-    addControl(Control::Type::Min, label, String(min), Control::Color::None, numberId);
-    addControl(Control::Type::Max, label, String(max), Control::Color::None, numberId);
+    Control::ControlId_t numberId = addControl(Control::Type::Number, label, number, color, Control::noParent, callback);
+    addControl(Control::Type::Min, label, min, Control::Color::None, numberId);
+    addControl(Control::Type::Max, label, max, Control::Color::None, numberId);
     return numberId;
 }
 
 Control::ControlId_t ESPUIClass::gauge(const char* label, Control::Color color, int number, int min, int max)
 {
-    Control::ControlId_t numberId = addControl(Control::Type::Gauge, label, String(number), color, Control::noParent);
-    addControl(Control::Type::Min, label, String(min), Control::Color::None, numberId);
-    addControl(Control::Type::Max, label, String(max), Control::Color::None, numberId);
+    Control::ControlId_t numberId = addControl(Control::Type::Gauge, label, number, color, Control::noParent);
+    addControl(Control::Type::Min, label, min, Control::Color::None, numberId);
+    addControl(Control::Type::Max, label, max, Control::Color::None, numberId);
     return numberId;
 }
 
@@ -847,7 +847,7 @@ void ESPUIClass::updateControlValue(Control* control, long value, int clientId)
     if (control->control_flags & CONTROL_FLAG_NUMERIC)
      control->numeric_value = value;
     else
-      (*(control->string_value)) = String(value);
+      (*(control->string_value)) = value;
     updateControl(control, clientId);
 }
 
@@ -991,7 +991,7 @@ void ESPUIClass::updateSelect(Control::ControlId_t id, int value, int clientId)
 
 void ESPUIClass::updateGauge(Control::ControlId_t id, int number, int clientId)
 {
-    updateControlValue(id, String(number), clientId);
+    updateControlValue(id, number, clientId);
 }
 
 void ESPUIClass::updateTime(Control::ControlId_t id, int clientId)
