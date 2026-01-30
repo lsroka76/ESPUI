@@ -34,6 +34,12 @@ void _ESPUIcontrolMgr::RemoveToBeDeletedControls()
             {
                 PreviousControl->next = NextControl;
             }
+            if  ((CurrentControl->control_flags & CONTROL_FLAG_NUMERIC) ||
+                 (CurrentControl->control_flags & CONTROL_FLAG_PCHAR)) 
+            ;
+            else
+             if (CurrentControl->string_value) 
+	      delete CurrentControl->string_value;
             delete CurrentControl;
             CurrentControl = NextControl;
         }

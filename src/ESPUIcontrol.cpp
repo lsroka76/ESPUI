@@ -226,7 +226,6 @@ void Control::DeleteControl()
     //_ToBeDeleted = true;
     control_flags |= CONTROL_FLAG_DELETED;
     callback = nullptr;
-    if (string_value) delete string_value;
 }
 
 
