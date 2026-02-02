@@ -489,18 +489,7 @@ function start() {
             case UI_OPTION:
                 if (data.parentControl) {
                     var parent = $("#select" + data.parentControl);
-                    if (data.value == "-2") 
-		    parent.append(
-                        "<option id='option" +
-                        data.id +
-                        "' value='" +
-                        data.value +
-                        "' " + "hidden>" +
-                        data.label +
-                        "</option>"
-                    );
-                   else
-                   parent.append(
+                    parent.append(
                         "<option id='option" +
                         data.id +
                         "' value='" +
@@ -637,28 +626,6 @@ function start() {
                     $("#select" + data.id).attr("style", data.elementStyle);
                 }
                 break;
-            
-            case UPDATE_OPTION:
-                //console.log(data.id);
-                //console.log(data.value);
-                if (data.value == "-2") {
-                  //console.log("hiding option");
-                  $("#option" + data.id).attr("hidden", true);
-                }
-                else {
-                  //console.log("showing option");
-                  $("#option" + data.id).removeAttr("hidden");
-                }
-                $("#option" + data.id).val(data.value);
-                $("#option" + data.id).text(data.label);
-                /*if (data.hasOwnProperty('visible')) {
-		console.log("has visible");
-                
-                  if (data['visible'])
-                    $("#option" + data.id).removeAttr("hidden");
-                  else $("#option" + data.id).attr("hidden", true);
-                }*/
-                break;
 
             case UPDATE_BUTTON:
                 $("#btn" + data.id).val(data.value);
@@ -780,7 +747,6 @@ function start() {
 
             default:
                 console.error("Unknown type or event");
-                 console.error(data.type);
                 break;
         }
 
