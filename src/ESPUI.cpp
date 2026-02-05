@@ -925,6 +925,42 @@ void ESPUIClass::updateControlLabel(Control* control, const char* value, int cli
     updateControl(control, clientId);
 }
 
+
+void ESPUIClass::updateOption(
+      Control::ControlId_t control, const char * label, long value, long dynamic_option_id, 
+      uint8_t operation) {
+
+
+  Control* option_control = getControl(control);
+
+  if (option_control) {
+  
+    option_control->label = label;
+    option_control->control_flags |= CONTROL_FLAG_NUMERIC;
+    option_control->numeric_value = value;
+    option_control->dynamic_option_id = dynamic_option_id;
+    
+    switch (operation) {
+
+      case 1:
+        option_control->control_flags |= CONTROL_FLAG_OPTION_UPDATE;
+      break;
+
+      case 2:
+        option_control->control_flags |= CONTROL_FLAG_OPTION_ADD;
+      break;
+
+      case 3:
+        option_control->control_flags |= CONTROL_FLAG_OPTION_REMOVE;
+      break;
+    }
+    updateControl(option_control, -1);
+
+  }
+}
+
+
+
 void ESPUIClass::updateVisibility(Control::ControlId_t id, bool visibility, int clientId)
 {
     Control* control = getControl(id);
@@ -978,10 +1014,10 @@ void ESPUIClass::updateText(Control::ControlId_t id, const String& text, int cli
     updateControlValue(id, text, clientId);
 }
 
-void ESPUIClass::updateSelect(Control::ControlId_t id, const String& text, int clientId)
+/*void ESPUIClass::updateSelect(Control::ControlId_t id, const String& text, int clientId)
 {
     updateControlValue(id, text, clientId);
-}
+}*/
 
 void ESPUIClass::updateSelect(Control::ControlId_t id, int value, int clientId)
 {

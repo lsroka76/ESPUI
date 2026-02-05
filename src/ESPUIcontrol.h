@@ -5,6 +5,7 @@
 #include <functional>
 
 #define CONTROL_FLAG_DELETED    (1 << 4)
+#define CONTROL_FLAG_NUMERIC    (1 << 5)
 
 class Control
 {
@@ -74,7 +75,10 @@ public:
 
     const char *panelStyle = nullptr;
     const char *elementStyle = nullptr;
+union {
     const char *inputType = nullptr;
+    int32_t dynamic_option_id;
+};
 
     static constexpr uint16_t noParent = 0xffff;
 
@@ -114,6 +118,10 @@ public:
     void DeleteControl();
     void onWsEvent(String& cmd, String& data);
     inline bool ToBeDeleted() { return control_flags & CONTROL_FLAG_DELETED; }
+    inline bool SkipSend() { return ((type == Control::Type::Option) && (control_flags & CONTROL_FLAG_NUMERIC) && (numeric_value == -3));
+                      //log_i("label %s, skip send %u, type %u", label, skip_send, type);
+		      //return skip_send;
+		      }
     inline bool NeedsSync(uint32_t lastControlChangeID) {return (!(control_flags & CONTROL_FLAG_DELETED)) && (lastControlChangeID < ControlChangeID);}
     void    SetControlChangedId(uint32_t value) {ControlChangeID = value;}
     inline ControlId_t GetId() {return id;}

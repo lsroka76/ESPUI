@@ -348,6 +348,19 @@ bool Control::MarshalControl(JsonObject & _item,
 
     if (panelStyle) {item[F("panelStyle")]    = panelStyle;}
     if (elementStyle)  {item[F("elementStyle")]  = elementStyle;}
+    if (control_flags & CONTROL_FLAG_OPTION_UPDATE)
+      {item[F("optionMode")]     = 1;
+       item[F("dOptionId")]     = dynamic_option_id;
+       }
+    else
+    if (control_flags & CONTROL_FLAG_OPTION_ADD)
+      {item[F("optionMode")]     = 2;
+       item[F("dOptionId")]     = dynamic_option_id;}
+    else
+    if (control_flags & CONTROL_FLAG_OPTION_REMOVE)
+      {item[F("optionMode")]     = 3;
+       item[F("dOptionId")]     = dynamic_option_id;}
+    else
     if (inputType)     {item[F("inputType")]     = inputType;}
     if (control_flags & CONTROL_FLAG_WIDE) {item[F("wide")] = true;}
     if (control_flags & CONTROL_FLAG_VERTICAL) {item[F("vertical")] = true;}

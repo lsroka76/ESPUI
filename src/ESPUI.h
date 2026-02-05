@@ -76,6 +76,11 @@ enum MessageTypes : uint8_t
 #define CONTROL_FLAG_NUMERIC    (1 << 5)
 #define CONTROL_FLAG_PCHAR      (1 << 6)
 
+#define CONTROL_FLAG_OPTION_UPDATE (1<<16)
+#define CONTROL_FLAG_OPTION_ADD    (1<<17)
+#define CONTROL_FLAG_OPTION_REMOVE (1<<18)
+
+
 
 // Values
 #define B_DOWN -1
@@ -202,6 +207,10 @@ public:
     void updateControlLabel(Control::ControlId_t control, const char * value, int clientId = -1);
     void updateControlLabel(Control* control, const char * value, int clientId = -1);
 
+    void updateOption(
+      Control::ControlId_t control, const char * label, long value, long dynamic_option_id, 
+      uint8_t operation);
+
     void updateControl(Control::ControlId_t id, int clientId = -1);
     void updateControl(Control* control, int clientId = -1);
 
@@ -213,7 +222,7 @@ public:
     void updateSlider(Control::ControlId_t id, int nValue, int clientId = -1);
     void updateNumber(Control::ControlId_t id, int nValue, int clientId = -1);
     void updateText(Control::ControlId_t id, const String& nValue, int clientId = -1);
-    void updateSelect(Control::ControlId_t id, const String& nValue, int clientId = -1);
+    //void updateSelect(Control::ControlId_t id, const String& nValue, int clientId = -1);
     void updateSelect(Control::ControlId_t id, int nValue, int clientId = -1);
     void updateGauge(Control::ControlId_t id, int number, int clientId);
     void updateTime(Control::ControlId_t id, int clientId = -1);

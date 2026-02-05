@@ -242,7 +242,7 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
         while ((startindex > currentIndex) && (nullptr != CurrentControlObject))
         {
             // only count active controls
-            if (!CurrentControlObject->ToBeDeleted())
+            if ((!CurrentControlObject->ToBeDeleted()) && (!CurrentControlObject->SkipSend()))
             {
                 if(InUpdateMode)
                 {
@@ -274,7 +274,7 @@ uint32_t _ESPUIcontrolMgr::prepareJSONChunk(uint16_t startindex,
         while (nullptr != CurrentControlObject)
         {
             // skip deleted controls or controls that have not been updated
-            if (CurrentControlObject->ToBeDeleted() && !SingleControl)
+            if ((CurrentControlObject->ToBeDeleted() || CurrentControlObject->SkipSend()) && !SingleControl)
             {
                 // //Serial.println(String("prepareJSONChunk: Ignoring Deleted control: ") + String(Control->id));
                 CurrentControlObject = CurrentControlObject->next;
