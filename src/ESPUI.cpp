@@ -685,6 +685,9 @@ Control::ControlId_t ESPUIClass::text(const char* label, std::function<void(Cont
 
 Control* ESPUIClass::getControl(Control::ControlId_t id) {return ESPUIcontrolMgr.getControl(id);}
 Control* ESPUIClass::getControlNoLock(Control::ControlId_t id) {return ESPUIcontrolMgr.getControlNoLock(id);}
+Control* ESPUIClass::getFirstOptionId(Control::ControlId_t selector, long value)
+{return ESPUIcontrolMgr.getFirstOptionId(selector, value);}
+
 
 void ESPUIClass::updateControl(Control* control, int)
 {

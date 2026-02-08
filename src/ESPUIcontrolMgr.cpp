@@ -98,6 +98,46 @@ _ESPUIcontrolMgr::ControlObject_t * _ESPUIcontrolMgr::getControlObjectNoLock(Con
     return Response;
 } // getControlObjectNoLock
 
+Control* _ESPUIcontrolMgr::getFirstOptionId(Control::ControlId_t selector, long value)
+{
+#ifdef ESP32
+    xSemaphoreTake(ControlsSemaphore, portMAX_DELAY);
+#endif // !def ESP32
+    Control* Response = getFirstOptionIdNoLock(selector, value);
+#ifdef ESP32
+    xSemaphoreGive(ControlsSemaphore);
+#endif // !def ESP32
+    return Response;
+}
+
+Control* _ESPUIcontrolMgr::getFirstOptionIdNoLock(Control::ControlId_t selector, long value)
+{
+    return getFirstOptionIdObjectNoLock(selector, value);
+} 
+
+_ESPUIcontrolMgr::ControlObject_t * _ESPUIcontrolMgr::getFirstOptionIdObjectNoLock(Control::ControlId_t selector, long value)
+{
+    ControlObject_t * Response = nullptr;
+    ControlObject_t * CurrentControl = controls;
+
+    while (nullptr != CurrentControl)
+    {
+        if ((CurrentControl->parentControl == selector) && (CurrentControl->type == Control::Type::Option) &&
+            (CurrentControl->control_flags & CONTROL_FLAG_NUMERIC) && (CurrentControl->numeric_value == value))
+        {
+            if (!CurrentControl->ToBeDeleted())
+            {
+                Response = CurrentControl;
+            }
+            break;
+        }
+        CurrentControl = CurrentControl->next;
+    }
+
+    return Response;
+} 
+
+
 bool _ESPUIcontrolMgr::removeControl(Control::ControlId_t id)
 {
     bool Response = false;

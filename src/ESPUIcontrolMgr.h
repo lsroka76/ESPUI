@@ -41,6 +41,10 @@ public:
     Control* getControl(Control::ControlId_t id);
     Control* getControlNoLock(Control::ControlId_t id);
     Control::ControlId_t GetControlCount() {return controlCount;}
+    Control* getFirstOptionId(Control::ControlId_t selector, long value);
+    Control* getFirstOptionIdNoLock(Control::ControlId_t selector, long value);
+
+    
 
     uint32_t prepareJSONChunk(uint16_t startindex,
                               JsonDocument & rootDoc,
@@ -86,6 +90,7 @@ ControlObject_t(Control::ControlId_t id,
     Control::ControlId_t controlCount = 0;
     Control::ControlId_t idCounter = 0;
     ControlObject_t * getControlObjectNoLock(Control::ControlId_t id);
+    ControlObject_t * getFirstOptionIdObjectNoLock(Control::ControlId_t selector, long value);
 
 #ifdef ESP32
     SemaphoreHandle_t ControlsSemaphore = NULL;

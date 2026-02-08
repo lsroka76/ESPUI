@@ -192,6 +192,7 @@ public:
 
     Control* getControl(Control::ControlId_t id);
     Control* getControlNoLock(Control::ControlId_t id);
+    Control* getFirstOptionId(Control::ControlId_t selector, long value);
 
     // Update Elements
     void updateControlValue(Control::ControlId_t id, const String& value, int clientId = -1);
