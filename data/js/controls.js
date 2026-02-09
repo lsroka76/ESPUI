@@ -516,6 +516,59 @@ function start() {
                         "</option>"
                     );
                 }
+                if (data.hasOwnProperty('secondParent')) {
+                
+                  var parentB = $("#select" + data.secondParent);
+                  if (data.value == "-2") 
+		     parentB.append(
+                        "<option id='optionB" +
+                        data.id +
+                        "' value='" +
+                        data.value +
+                        "' " + "hidden>" +
+                        data.label +
+                        "</option>"
+                     );
+                   else
+                   parentB.append(
+                        "<option id='optionB" +
+                        data.id +
+                        "' value='" +
+                        data.value +
+                        "' " +
+                        data.selected +
+                        ">" +
+                        data.label +
+                        "</option>"
+                    );
+                }
+		if (data.hasOwnProperty('thirdParent')) {
+                
+                  var parentC = $("#select" + data.thirdParent);
+                  if (data.value == "-2") 
+		     parentC.append(
+                        "<option id='optionC" +
+                        data.id +
+                        "' value='" +
+                        data.value +
+                        "' " + "hidden>" +
+                        data.label +
+                        "</option>"
+                     );
+                   else
+                   parentC.append(
+                        "<option id='optionC" +
+                        data.id +
+                        "' value='" +
+                        data.value +
+                        "' " +
+                        data.selected +
+                        ">" +
+                        data.label +
+                        "</option>"
+                    );
+                }
+                  
                 break;
 
             case UI_MIN:
@@ -654,13 +707,78 @@ function start() {
                 var parent = $("#select" + data.parentControl);
                 var option = $("#option" + data.id);
 
-                /*if (data.hasOwnProperty('dOptionId')) {
+                if (data.hasOwnProperty('secondParent')) {
                 
-                  var doption = $("#doption" + data.dOptionId);
-                  console.log(data.dOptionId);
-                  console.log(data.optionMode);
-                }*/
+                  var parentB = $("#select" + data.secondParent);
+                  var optionB = $("#optionB" + data.id);
+                  //console.log("has secondParent");
+                  //console.log(optionB.length);
+
+		  if (optionB.length > 0) {
+                  
+		  //console.log("option present");
+                  
+                  if (data.value == "-2")
+                    optionB.remove();
+                  
+                  else {
+                   
+                   optionB.val(data.value);
+                   optionB.text(data.label);
+                  }
+                }
+                else {
+                  
+                  //console.log("option absent");
+                  
+                  if (Number(data.value) > -2)
+		    parentB.append(
+                         "<option id='optionB" +
+                         data.id +
+                         "' value='" +
+                         data.value +
+                         "' " + ">" +
+                         data.label +
+                         "</option>"
+                     );
+                }
+                }
+		if (data.hasOwnProperty('thirdParent')) {
                 
+                  var parentC = $("#select" + data.thirdParent);
+                  var optionC = $("#optionC" + data.id);
+                  //console.log("has secondParent");
+                  //console.log(optionB.length);
+
+		  if (optionC.length > 0) {
+                  
+		  //console.log("option present");
+                  
+                  if (data.value == "-2")
+                    optionC.remove();
+                  
+                  else {
+                   
+                   optionC.val(data.value);
+                   optionC.text(data.label);
+                  }
+                }
+                else {
+                  
+                  //console.log("option absent");
+                  
+                  if (Number(data.value) > -2)
+		    parentC.append(
+                         "<option id='optionC" +
+                         data.id +
+                         "' value='" +
+                         data.value +
+                         "' " + ">" +
+                         data.label +
+                         "</option>"
+                     );
+                }
+                }
                 //console.log(option.length);
                 //console.log(option.html.length);
                 

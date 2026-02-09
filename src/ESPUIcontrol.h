@@ -60,8 +60,6 @@ public:
 
     const char* label;
     std::function<void(Control*, int)> callback;
-    //String value;
-    //char *value2;
  union {
     long numeric_value;
     const char *cstr_value = nullptr;
@@ -78,6 +76,10 @@ public:
 union {
     const char *inputType = nullptr;
     int32_t dynamic_option_id;
+struct {
+    uint16_t secondParent;
+    uint16_t thirdParent;
+};
 };
 
     static constexpr uint16_t noParent = 0xffff;
