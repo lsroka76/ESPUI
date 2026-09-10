@@ -167,6 +167,8 @@ public:
 
 
     bool removeControl(Control::ControlId_t id, bool force_rebuild_ui = false);
+    bool removeOptionControl(Control::ControlId_t id);
+
     uint16_t removeSelectOptions(Control::ControlId_t select_id,  Control::ControlId_t skip_id = 0xFFFF, bool force_rebuild_ui = false);
 
     
@@ -197,6 +199,8 @@ public:
     BasicControl* getControl(Control::ControlId_t id);
     BasicControl* getControlNoLock(Control::ControlId_t id);
     BasicControl* getFirstOptionId(Control::ControlId_t selector, long value);
+    BasicControl* getNextOptionId(Control::ControlId_t selector, long value, Control::ControlId_t prev_option_id);
+
 
     // Update Elements
     void updateControlValue(Control::ControlId_t id, const String& value, int clientId = -1);
