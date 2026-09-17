@@ -101,7 +101,7 @@ bool ESPUIclient::SendClientNotification(ClientUpdateType_t value)
     {
         if(!CanSend())
         {
-            // Serial.println(F("ESPUIclient::SendClientNotification:CannotSend"));
+            Serial.println(F("ESPUIclient::SendClientNotification:CannotSend"));
             break;
         }
 
@@ -115,7 +115,7 @@ bool ESPUIclient::SendClientNotification(ClientUpdateType_t value)
         // dont send any controls
 
         Response = SendJsonDocToWebSocket(document);
-        // Serial.println(String("ESPUIclient::SendClientNotification:NotificationSent:Response: ") + String(Response));
+        Serial.println(String("ESPUIclient::SendClientNotification:NotificationSent:Response: ") + String(Response));
 
     } while (false);
     return Response;

@@ -123,7 +123,8 @@ _ESPUIcontrolMgr::ControlObject_t * _ESPUIcontrolMgr::getFirstOptionIdObjectNoLo
     while (nullptr != CurrentControl)
     {
         if ((CurrentControl->parentControl == selector) && (CurrentControl->type == Control::Type::Option) &&
-            (CurrentControl->control_flags & CONTROL_FLAG_NUMERIC) && (CurrentControl->numeric_value == value))
+            (CurrentControl->control_flags & CONTROL_FLAG_NUMERIC) && 
+	    ((value == -4) || (CurrentControl->numeric_value == value)))
         {
             if (!CurrentControl->ToBeDeleted())
             {
@@ -163,7 +164,8 @@ _ESPUIcontrolMgr::ControlObject_t * _ESPUIcontrolMgr::getNextOptionIdObjectNoLoc
     while (nullptr != CurrentControl)
     {
         if ((CurrentControl->parentControl == selector) && (CurrentControl->type == Control::Type::Option) &&
-            (CurrentControl->control_flags & CONTROL_FLAG_NUMERIC) && (CurrentControl->numeric_value == value) &&
+            (CurrentControl->control_flags & CONTROL_FLAG_NUMERIC) && 
+	    ((value == -4) || (CurrentControl->numeric_value == value)) &&
             (CurrentControl->id > prev_option_id))
         {
             if (!CurrentControl->ToBeDeleted())
