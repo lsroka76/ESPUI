@@ -260,7 +260,9 @@ void setPanelStyle(Control::ControlId_t id, const char *style, int clientId = -1
     // css: CSS code as a C-string. Must remain valid for the lifetime of the ESPUIClass instance.
     // This is intentionally not a String to avoid dynamic memory allocation.
     void setCustomCSS(const char* css);
-
+    void setOnWsConnectCallback(void (*callback)()) {
+      on_ws_connect = callback;
+    }
 
     // Variables
     const char* ui_title = "ESPUI"; // Store UI Title and Header Name
@@ -311,6 +313,8 @@ Control::ControlId_t addControl(Control::Type type, const char* label, const cha
     AsyncWebServer* WebServer() {return server;}
     AsyncWebSocket* WebSocket() {return ws;}
 
+    bool isSynchronized();
+
 #if defined(ESP32)
 #   if (ESP_IDF_VERSION_MAJOR == 4 && ESP_IDF_VERSION_MINOR >= 4) || ESP_IDF_VERSION_MAJOR > 4
         fs::LittleFSFS & EspuiLittleFS = LittleFS;
@@ -343,6 +347,7 @@ protected:
     std::map<uint32_t, ESPUIclient*> MapOfClients;
 
     uint32_t    ControlChangeID = 0;
+    void (*on_ws_connect)() = nullptr;
 };
 
 extern ESPUIClass ESPUI;

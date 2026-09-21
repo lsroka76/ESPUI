@@ -482,6 +482,8 @@ void ESPUIClass::onWsEvent(
         if(type == WS_EVT_CONNECT)
         {
             ws->cleanupClients();
+            if (on_ws_connect)
+	      on_ws_connect();
         }
 
         if (MapOfClients.end() == MapOfClients.find(client->id()))
@@ -1179,6 +1181,19 @@ void ESPUIClass::NotifyClients(ClientUpdateType_t newState)
         CurrentClient.second->NotifyClient(newState);
     }
 }
+
+// Tell all of the clients that they need to ask for an upload of the control data.
+bool ESPUIClass::isSynchronized()
+{
+    bool result = true;
+
+    for (auto& CurrentClient : MapOfClients)
+    {
+        result = result && CurrentClient.second->IsSyncronized();
+    }
+    return result;
+}
+
 
 void ESPUIClass::jsonReload()
 {

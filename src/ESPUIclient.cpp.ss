@@ -2,7 +2,9 @@
 #include "ESPUIclient.h"
 #include "ESPUIcontrol.h"
 
-static size_t max_buffer_len = 0;
+std::string json(8000, '\0');
+//char json[4096];
+
 // JSONSlave:
 // helper to process exact JSON serialization size
 // it takes ~2ms on esp8266 and avoid large String reallocation which is really worth the cost
@@ -101,7 +103,7 @@ bool ESPUIclient::SendClientNotification(ClientUpdateType_t value)
     {
         if(!CanSend())
         {
-            Serial.println(F("ESPUIclient::SendClientNotification:CannotSend"));
+            // Serial.println(F("ESPUIclient::SendClientNotification:CannotSend"));
             break;
         }
 
@@ -115,7 +117,7 @@ bool ESPUIclient::SendClientNotification(ClientUpdateType_t value)
         // dont send any controls
 
         Response = SendJsonDocToWebSocket(document);
-        Serial.println(String("ESPUIclient::SendClientNotification:NotificationSent:Response: ") + String(Response));
+        // Serial.println(String("ESPUIclient::SendClientNotification:NotificationSent:Response: ") + String(Response));
 
     } while (false);
     return Response;
@@ -174,41 +176,31 @@ bool ESPUIclient::onWsEvent(AwsEventType type, void* arg, uint8_t* data, size_t 
 
         case WS_EVT_DATA:
         {
-            //Serial.println(F("ESPUIclient::OnWsEvent:WS_EVT_DATA"));
-            String msg = "";
-            msg.reserve(len + 1);
+            std::string msg;
+	    msg.reserve(len + 1);
 
-            for (size_t i = 0; i < len; i++)
-            {
-                msg += (char)data[i];
-            }
+	    for (size_t i = 0; i < len; i++)
+	     msg += static_cast<char>(data[i]);
+	     const auto delim1 {msg.find(':')};
+	     const auto delim2 {msg.find_last_of(':')};
 
-            String   cmd   = msg.substring(0, msg.indexOf(":"));
-            String   value = msg.substring(cmd.length() + 1, msg.lastIndexOf(':'));
-            uint16_t id    = msg.substring(msg.lastIndexOf(':') + 1).toInt();
+	     const std::string cmd = msg.substr(0, delim1);
+	     const std::string value = msg.substr(delim1 + 1, delim2 - delim1 - 1);
+	     const uint16_t id = std::stoi(msg.substr(delim2 + 1));
 
-            #if defined(DEBUG_ESPUI)
-                if (ESPUI.verbosity >= Verbosity::VerboseJSON)
-                {
-                    Serial.println(String(F("  WS msg: ")) + msg);
-                    Serial.println(String(F("  WS cmd: ")) + cmd);
-                    Serial.println(String(F("   WS id: ")) + String(id));
-                    Serial.println(String(F("WS value: ")) + String(value));
-                }
-            #endif
 
-            if (cmd.equals(F("uiok")))
+            if (cmd == "uiok")
             {
                 
-                Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:ProcessAck:")) + pCurrentFsmState->GetStateName());
-                pCurrentFsmState->ProcessAck(id, emptyString);
+                //Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:ProcessAck:")) + pCurrentFsmState->GetStateName());
+                pCurrentFsmState->ProcessAck(id, "");
                 break;
             }
 
-            if (cmd.equals(F("uifragmentok")))
+            if (cmd == "uifragmentok")
             {
                 //Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:uifragmentok:")) + pCurrentFsmState->GetStateName() + ":ProcessAck");
-                if(!emptyString.equals(value))
+                if(!value.empty())
                 {
                     //Serial.println(String(F("ESPUIclient::OnWsEvent:WS_EVT_DATA:uiok:uifragmentok:")) + pCurrentFsmState->GetStateName() + ":ProcessAck:value:'" +  value + "'");
                     pCurrentFsmState->ProcessAck(uint16_t(-1), value);
@@ -220,14 +212,14 @@ bool ESPUIclient::onWsEvent(AwsEventType type, void* arg, uint8_t* data, size_t 
                 break;
             }
 
-            if (cmd.equals(F("uiuok")))
+            if (cmd == "uiuok")
             {
                 //Serial.println(F("WS_EVT_DATA: uiuok. Unlock new async notifications"));
                 break;
             }
 
             // Serial.println(F("WS_EVT_DATA:Process Control"));
-            BasicControl* control = ESPUI.getControl(id);
+            Control* control = ESPUI.getControl(id);
             if (nullptr == control)
             {
                 #if defined(DEBUG_ESPUI)
@@ -274,10 +266,9 @@ CLIENT: controls.js:handleEvent()
 etc.
     Returns true if all controls have been sent (aka: Done)
 */
-bool ESPUIclient::SendControlsToClient(uint16_t startidx, ClientUpdateType_t TransferMode, String FragmentRequest)
+bool ESPUIclient::SendControlsToClient(uint16_t startidx, ClientUpdateType_t TransferMode, const std::string &FragmentRequest)
 {
     bool Response = false;
-    // Serial.println(String("ESPUIclient:SendControlsToClient:startidx: ") + String(startidx));
     do // once
     {
         if(!CanSend())
@@ -285,15 +276,15 @@ bool ESPUIclient::SendControlsToClient(uint16_t startidx, ClientUpdateType_t Tra
             // Serial.println("ESPUIclient:SendControlsToClient: Cannot Send to clients.");
             break;
         }
-
-        else if ((startidx >= ESPUIcontrolMgr.GetControlCount()) && (emptyString.equals(FragmentRequest)))
+        else if ((startidx >= ESPUIcontrolMgr.GetControlCount()) && (FragmentRequest.empty()))
         {
             // Serial.println(F("ERROR:ESPUIclient:SendControlsToClient: No more controls to send."));
             Response = true;
             break;
         }
 
-        AllocateJsonDocument(document, ESPUI.jsonInitialDocumentSize);
+        //AllocateJsonDocument(document, ESPUI.jsonInitialDocumentSize);
+        JsonDocument document;
         FillInHeader(document);
         document[F("startindex")] = startidx;
         document[F("totalcontrols")] = uint16_t(-1); // ESPUI.controlCount;
@@ -307,15 +298,20 @@ bool ESPUIclient::SendControlsToClient(uint16_t startidx, ClientUpdateType_t Tra
         }
         // Serial.println(String("ESPUIclient:SendControlsToClient:type: ") + String((uint32_t)document["type"]));
 
-        // Serial.println("ESPUIclient:SendControlsToClient: Build Controls.");
+        Serial.println("ESPUIclient:SendControlsToClient: Build Controls.");
         if(ESPUIcontrolMgr.prepareJSONChunk(startidx, document, ClientUpdateType_t::UpdateNeeded == TransferMode, FragmentRequest, CurrentSyncID))
-        {
-            #if defined(DEBUG_ESPUI)
+	{
+            
+Serial.println(F("ESPUIclient:SendControlsToClient: Sending elements --------->"));
+                    //serializeJson(document, Serial);
+Serial.printf("\n\rJson doc len = %u\n\r",measureJson(document)); 
+                    Serial.println();
+#if defined(DEBUG_ESPUI)
                 if (ESPUI.verbosity >= Verbosity::VerboseJSON)
                 {
                     Serial.println(F("ESPUIclient:SendControlsToClient: Sending elements --------->"));
                     serializeJson(document, Serial);
-                    Serial.println();
+                    //Serial.printf("size %u", strlen();
                 }
             #endif
 
@@ -382,21 +378,19 @@ bool ESPUIclient::SendJsonDocToWebSocket(JsonDocument& document)
 	//Serial.println(json);
         //delay(500);
 	//client->text(json);
-	/*std::string json {};
+        Serial.println("***************HERE**************");
+delay(500);
+	//std::string json {};
 	serializeJson(document, json);
+Serial.println("***************AND HERE**************");
+delay(500);
 	Serial.printf("\n\r*********JSON length %u\n\r",json.length());
-	//Serial.printf("\n\r*********JSON length %u\n\r",strlen(json));
+	Serial.printf("\n\r*********JSON %s\n\r",json.c_str());
 
-	client->text(json.c_str());*/
-	const size_t len = measureJson(document);
-        if (len > max_buffer_len)
-	 max_buffer_len = len;
-        log_i("max_buffer_len %lu", max_buffer_len);
-  	// original API from me-no-dev
-  	AsyncWebSocketMessageBuffer* buffer = ESPUI.WebSocket()->makeBuffer(len);
-  	//assert(buffer); // up to you to keep or remove this
-  	serializeJson(document, buffer->get(), len);
-  	client->text(buffer);
+	//Serial.printf("\n\r*********JSON length %u\n\r",strlen(json));
+	delay(500);
+	client->text(json.c_str());
+
     } while (false);
 
     return Response;
