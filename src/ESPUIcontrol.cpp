@@ -545,9 +545,19 @@ bool BasicControl::MarshalControl(JsonObject & _item,
     if (control_flags & CONTROL_FLAG_OPTION_REMOVE)
       {item[F("optionMode")]     = 3;
        item[F("dOptionId")]     = dynamic_option_id;}
-    else
-    if ((Type::Option != type) && (inputType)) 
-      {item[F("inputType")]     = inputType;}
+    else 
+    if (control_flags & CONTROL_FLAG_TEXTAREA) 
+    {
+        item[F("textarea")] = true;
+        if (rows > 0) item[F("rows")] = rows;
+        if (cols > 0) item[F("cols")] = cols;
+    }
+    else 
+    if ((Control::Type::Option != type) && (inputType)) 
+    {
+        item[F("inputType")] = inputType;
+    }
+
     if (control_flags & CONTROL_FLAG_WIDE) {item[F("wide")] = true;}
     if (control_flags & CONTROL_FLAG_VERTICAL) {item[F("vertical")] = true;}
     if (parentControl != Control::noParent)
@@ -717,9 +727,20 @@ bool LabelControl::MarshalControl(JsonObject & _item,
     if (control_flags & CONTROL_FLAG_OPTION_REMOVE)
       {item[F("optionMode")]     = 3;
        item[F("dOptionId")]     = dynamic_option_id;}
-    else
+    else 
+    if (control_flags & CONTROL_FLAG_TEXTAREA) 
+    {
+        item[F("textarea")] = true;
+        if (rows > 0) item[F("rows")] = rows;
+        if (cols > 0) item[F("cols")] = cols;
+    }
+    else 
     if ((Control::Type::Option != type) && (inputType)) 
-      {item[F("inputType")]     = inputType;}
+    {
+        item[F("inputType")] = inputType;
+    }
+
+
     if (control_flags & CONTROL_FLAG_WIDE) {item[F("wide")] = true;}
     if (control_flags & CONTROL_FLAG_VERTICAL) {item[F("vertical")] = true;}
     if (parentControl != Control::noParent)

@@ -692,7 +692,17 @@ function start() {
                 if (data.hasOwnProperty('elementStyle')) {
                     $("#text" + data.id).attr("style", data.elementStyle);
                 }
-                if (data.hasOwnProperty('inputType')) {
+                
+                // NEW: Catch dynamic resizes for text areas
+                if (data.hasOwnProperty('textarea') && data.textarea) {
+                    if (data.hasOwnProperty('rows')) {
+                        $("#text" + data.id).attr("rows", data.rows);
+                    }
+                    if (data.hasOwnProperty('cols')) {
+                        $("#text" + data.id).attr("cols", data.cols);
+                    }
+                } else if (data.hasOwnProperty('inputType')) {
+                    // Fallback for standard inputs
                     $("#text" + data.id).attr("type", data.inputType);
                 }
                 break;
@@ -1309,8 +1319,28 @@ var elementHTML = function (data) {
             return "<input style='color:black; " + data.elementStyle + "' id='num" + id +
                 "' type='number' value='" + data.value + "' oninput='numberchange(" + id + ")' />";
         case UI_TEXT_INPUT:
-            return "<input " + inputType + "style='color:black; " + data.elementStyle + "' id='text" + id +
-                "' value='" + data.value + "' oninput='textchange(" + id + ")' />";
+            // Safely handle custom styles to prevent "undefined" injecting into the HTML
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            
+            // Proposed useful additions
+            var placeholder = data.hasOwnProperty('placeholder') ? " placeholder='" + data.placeholder + "' " : "";
+            var readonly = (data.hasOwnProperty('readonly') && data.readonly) ? " readonly " : "";
+            var spellcheck = data.hasOwnProperty('spellcheck') && !data.spellcheck ? " spellcheck='false' " : "";
+
+            if (data.hasOwnProperty('textarea') && data.textarea) {
+                // Default to 4 rows if not specified
+                var rows = data.hasOwnProperty('rows') ? " rows='" + data.rows + "' " : " rows='4' ";
+                // Use cols if provided, otherwise leave blank (will default to 100% width via CSS usually)
+                var cols = data.hasOwnProperty('cols') ? " cols='" + data.cols + "' " : "";
+                
+                return "<textarea id='text" + id + "' " + rows + cols + placeholder + readonly + spellcheck +
+                       "style='color:black; " + customStyle + "' oninput='textchange(" + id + ")'>" + 
+                       data.value + "</textarea>";
+            } else {
+                return "<input id='text" + id + "' " + inputType + placeholder + readonly + spellcheck +
+                       "style='color:black; " + customStyle + "' value='" + data.value + "' " +
+                       "oninput='textchange(" + id + ")' />";
+            }
         case UI_SELECT:
             return "<select style='color:black; " + data.elementStyle + "' id='select" + id +
                 "' onchange='selectchange(" + id + ")' />";

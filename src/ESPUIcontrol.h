@@ -8,6 +8,7 @@
 #define CONTROL_FLAG_NUMERIC    (1 << 5)
 #define CONTROL_FLAG_PCHAR      (1 << 6)
 #define CONTROL_FLAG_STRING     (1 << 7)
+#define CONTROL_FLAG_TEXTAREA   (1 << 8)
 
 
 #define BASIC_CONTROL_ID        0x01
@@ -119,8 +120,12 @@ union {
 struct {
     uint16_t secondParent;
     uint16_t thirdParent;
-};
-};
+ };    
+struct {
+    uint16_t rows;
+    uint16_t cols;
+ };
+ };
 
     ControlId_t id = noParent;
     uint16_t control_flags;

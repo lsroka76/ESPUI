@@ -76,6 +76,7 @@ enum MessageTypes : uint8_t
 #define CONTROL_FLAG_NUMERIC    (1 << 5)
 #define CONTROL_FLAG_PCHAR      (1 << 6)
 #define CONTROL_FLAG_STRING     (1 << 7)
+#define CONTROL_FLAG_TEXTAREA   (1 << 8)
 
 
 #define CONTROL_FLAG_OPTION_UPDATE (1<<13)
