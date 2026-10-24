@@ -330,7 +330,11 @@ function start() {
                 //includes the title element
                 if (data.totalcontrols > (data.controls.length - 1)) {
                     websock.send("uiok:" + (data.controls.length - 1));
-                }
+                } else {
+    		  // All controls loaded in the first payload
+                  console.log("sending uicc");
+    		  websock.send("uicc:1");
+		}
                 break;
 
             case UI_EXTEND_GUI:
@@ -346,6 +350,10 @@ function start() {
                 //Do we need to keep requesting more UI elements?
                 if (data.totalcontrols > data.startindex + (data.controls.length - 1)) {
                     websock.send("uiok:" + (data.startindex + (data.controls.length - 1)));
+                } else {
+                  // All chunked controls have finished loading
+                  console.log("sending uicc");
+                  websock.send("uicc:1"); 
                 }
                 break;
 
@@ -379,11 +387,17 @@ function start() {
                     $("#btn" + data.id).on({
                         touchstart: function (e) {
                             e.preventDefault();
+                            // Abort immediately if the C++ backend disabled the button
+                            if ($(this).prop("disabled")) return; 
+                            
                             $(this).addClass("pressed");
                             buttonclick(data.id, true);
                         },
                         touchend: function (e) {
                             e.preventDefault();
+                            // Abort immediately if the C++ backend disabled the button
+                            if ($(this).prop("disabled")) return; 
+                            
                             $(this).removeClass("pressed");
                             buttonclick(data.id, false);
                         },
@@ -650,13 +664,12 @@ function start() {
              * Update messages change the value/style of a component without adding new HTML
              */
             case UPDATE_LABEL:
-
-		if (data.value.startsWith("Z2S_GUI_CMD_")) {
-                   
+                // Preserved custom Supla2Zigbee command hook
+                if (data.value.startsWith("Z2S_GUI_CMD_")) {
                   if (typeof window.onGatewayCommand === "function") {
                     window.onGatewayCommand(data.value, data.id);
                   }
-                  break; // Skip normal HTML rendering
+                  break; 
                 }
 
                 $("#l" + data.id).html(data.value);
@@ -665,55 +678,149 @@ function start() {
                 }
                 break;
 
-            case UPDATE_SWITCHER:
+           case UPDATE_SWITCHER:
                 switcher(data.id, data.value == "0" ? 0 : 1);
+                
                 if (data.hasOwnProperty('elementStyle')) {
-                    $("#sl" + data.id).attr("style", data.elementStyle);
+                    var wrapperCssObj = {};
+                    
+                    var innerStyle = data.elementStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                        wrapperCssObj[prop] = val; 
+                        return ""; 
+                    });
+
+                    // Update wrapper dynamically
+                    if (Object.keys(wrapperCssObj).length > 0) {
+                        $("#switcher-wrapper-" + data.id).css(wrapperCssObj);
+                    }
+                    
+                    // Apply visual styling directly to the inner switch label
+                    $("#sl" + data.id).attr("style", innerStyle);
+                }
+                
+                if (data.hasOwnProperty('label') && $("#input-label-" + data.id).length) {
+                    var safeLabel = data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                    $("#input-label-" + data.id).html(data.label);
+                    $("#input-label-" + data.id).attr("title", safeLabel);
                 }
                 break;
 
             case UPDATE_SLIDER:
-                $("#sl" + data.id).attr("value", data.value)
-                slider_move($("#sl" + data.id).parent().parent(), data.value, "100", false);
+                $("#sl" + data.id).attr("value", data.value);
+                
+                // Keep existing slider callback if present
+                if (typeof slider_move === "function") {
+                    slider_move($("#sl" + data.id).parent().parent(), data.value, "100", false);
+                }
+                
                 if (data.hasOwnProperty('elementStyle')) {
-                    $("#sl" + data.id).attr("style", data.elementStyle);
+                    var wrapperCssObj = {};
+                    var innerStyle = data.elementStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                        wrapperCssObj[prop] = val; 
+                        return ""; 
+                    });
+
+                    if (Object.keys(wrapperCssObj).length > 0) {
+                        $("#slider-wrapper-" + data.id).css(wrapperCssObj);
+                    }
+                    
+                    $("#sl" + data.id).attr("style", innerStyle);
+                }
+
+                if (data.hasOwnProperty('label') && $("#input-label-" + data.id).length) {
+                    var safeLabel = data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                    $("#input-label-" + data.id).html(data.label);
+                    $("#input-label-" + data.id).attr("title", safeLabel);
                 }
                 break;
 
             case UPDATE_NUMBER:
                 $("#num" + data.id).val(data.value);
+                
                 if (data.hasOwnProperty('elementStyle')) {
-                    $("#num" + data.id).attr("style", data.elementStyle);
+                    var wrapperCssObj = {};
+                    var innerStyle = data.elementStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                        wrapperCssObj[prop] = val; 
+                        return ""; 
+                    });
+
+                    // Update wrapper dynamically
+                    if (Object.keys(wrapperCssObj).length > 0) {
+                        $("#number-wrapper-" + data.id).css(wrapperCssObj);
+                    }
+                    
+                    // Apply visual styling directly to the inner input
+                    $("#num" + data.id).attr("style", "width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle);
+                }
+
+                // Update the nested label or placeholder
+                if (data.hasOwnProperty('label')) {
+                    var safeLabel = data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                    if ($("#input-label-" + data.id).length) {
+                        $("#input-label-" + data.id).html(data.label);
+                        $("#input-label-" + data.id).attr("title", safeLabel);
+                    } else {
+                        $("#num" + data.id).attr("placeholder", safeLabel);
+                    }
                 }
                 break;
 
             case UPDATE_TEXT_INPUT:
                 $("#text" + data.id).val(data.value);
+                
                 if (data.hasOwnProperty('elementStyle')) {
-                    $("#text" + data.id).attr("style", data.elementStyle);
+                    var wrapperCssObj = {};
+                    var innerStyle = data.elementStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                        wrapperCssObj[prop] = val; 
+                        return ""; 
+                    });
+
+                    if (Object.keys(wrapperCssObj).length > 0) {
+                        $("#text-wrapper-" + data.id).css(wrapperCssObj);
+                    }
+                    
+                    $("#text" + data.id).attr("style", "width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle);
+                }
+
+                if (data.hasOwnProperty('label')) {
+                    var safeLabel = data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                    if ($("#input-label-" + data.id).length) {
+                        $("#input-label-" + data.id).html(data.label);
+                        $("#input-label-" + data.id).attr("title", safeLabel);
+                    } else {
+                        $("#text" + data.id).attr("placeholder", safeLabel);
+                    }
                 }
                 
-                // NEW: Catch dynamic resizes for text areas
                 if (data.hasOwnProperty('textarea') && data.textarea) {
-                    if (data.hasOwnProperty('rows')) {
-                        $("#text" + data.id).attr("rows", data.rows);
-                    }
-                    if (data.hasOwnProperty('cols')) {
-                        $("#text" + data.id).attr("cols", data.cols);
-                    }
+                    if (data.hasOwnProperty('rows')) $("#text" + data.id).attr("rows", data.rows);
+                    if (data.hasOwnProperty('cols')) $("#text" + data.id).attr("cols", data.cols);
                 } else if (data.hasOwnProperty('inputType')) {
-                    // Fallback for standard inputs
                     $("#text" + data.id).attr("type", data.inputType);
                 }
                 break;
 
             case UPDATE_SELECT:
-                //var select = $("#select" + data.id);
-                //if (Number(data.value) > -2)
                 $("#select" + data.id).val(data.value);
                 
                 if (data.hasOwnProperty('elementStyle')) {
-                    $("#select" + data.id).attr("style", data.elementStyle);
+                    var wrapperCssObj = {};
+                    var innerStyle = data.elementStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                        wrapperCssObj[prop] = val; 
+                        return ""; 
+                    });
+
+                    if (Object.keys(wrapperCssObj).length > 0) {
+                        $("#select-wrapper-" + data.id).css(wrapperCssObj);
+                    }
+                    
+                    $("#select" + data.id).attr("style", "width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle);
+                }
+
+                if (data.hasOwnProperty('label') && $("#input-label-" + data.id).length) {
+                    var safeLabel = data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                    $("#input-label-" + data.id).html(data.label);
+                    $("#input-label-" + data.id).attr("title", safeLabel);
                 }
                 break;
             
@@ -876,10 +983,11 @@ function start() {
                 break;
 
             case UPDATE_BUTTON:
-                $("#btn" + data.id).val(data.value);
-                $("#btn" + data.id).text(data.value);
+                $("#btn" + data.id).html(data.value);
                 if (data.hasOwnProperty('elementStyle')) {
-                    $("#btn" + data.id).attr("style", data.elementStyle);
+                    var customStyle = data.elementStyle;
+                    if (!customStyle.includes("vertical-align")) customStyle += "vertical-align: bottom; ";
+                    $("#btn" + data.id).attr("style", customStyle);
                 }
                 break;
 
@@ -1272,25 +1380,59 @@ var elementHTML = function (data) {
     var elementStyle = data.hasOwnProperty('elementStyle') ? " style='" + data.elementStyle + "' " : "";
     var inputType = data.hasOwnProperty('inputType') ? " type='" + data.inputType + "' " : "";
     switch (data.type) {
+
         case UI_LABEL:
-            return "<span id='l" + id + "' " + elementStyle +
-                " class='label label-wrap'>" + data.value + "</span>";
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            // Reverted to native span to fix Screen 3 text-wrapping
+            return "<span id='l" + id + "' style='" + customStyle + "' class='label label-wrap'>" + data.value + "</span>";
+
         case UI_FILEDISPLAY:
             return "<textarea id='fd" + id + "' rows='4' " + elementStyle +
                 " class='label label-wrap'>" + "</textarea>";
+
         case UI_BUTTON:
-            return "<button id='btn" + id + "' " + elementStyle +
-                " onmousedown='buttonclick(" + id + ", true)'" +
-                " onmouseup='buttonclick(" + id + ", false)'>" +
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            // Ensure bottom alignment so it sits flush with flex inputs, but remove the flex-wrapper to fix Screen 2 squishing
+            if (!customStyle.includes("vertical-align")) customStyle += "vertical-align: bottom; ";
+            
+            return "<button id='btn" + id + "' style='" + customStyle + "' " +
+                "onmousedown='buttonclick(" + id + ", true)' onmouseup='buttonclick(" + id + ", false)'>" +
                 data.value + "</button>";
+
         case UI_SWITCHER:
-            return "<label id='sl" + id + "' " + elementStyle +
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            var isNested = data.hasOwnProperty('parentControl') && $("#tab" + data.parentControl).length === 0;
+            
+            var safeLabel = data.label ? data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            var onClickScript = "this.style.whiteSpace = this.style.whiteSpace === 'nowrap' ? 'normal' : 'nowrap';";
+            
+            // Restored margin-top:6px so it sits cleanly below the switch
+            var nestedLabel = isNested ? "<div id='input-label-" + id + "' title='" + safeLabel + "' onclick=\"" + onClickScript + "\" style='font-size:14px; text-align:center; margin-top:6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; width: 100%; cursor: pointer;'>" + data.label + "</div>" : "";
+            
+            var wrapperExtractedStyles = "";
+            var innerStyle = customStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                wrapperExtractedStyles += prop + ": " + val + "; ";
+                return ""; 
+            });
+
+            if (!wrapperExtractedStyles.includes("margin")) {
+                wrapperExtractedStyles += "margin: 8px; ";
+            }
+
+            var controlHTML = "<label id='sl" + id + "' style='" + innerStyle + "'" +
                 " class='switch " + (data.value == "1" ? "checked" : "") +
                 (data.hasOwnProperty('vertical') ? " vert-switcher " : "") +
                 "'>" +
                 "<div class='in'>" +
                 "<input type='checkbox' id='s" + id + "' onClick='switcher(" + id + ",null)' " +
                 (data.value == "1" ? "checked" : "") + "/></div></label>";
+                
+            // Wrapper maintains vertical-align: bottom to prevent float snagging
+            var wrapperStyle = "display: inline-flex; flex-direction: column; align-items: center; vertical-align: bottom; max-width: 100%; " + wrapperExtractedStyles;
+
+            // Restored rendering order: switch on top, label on bottom
+            return "<div id='switcher-wrapper-" + id + "' style='" + wrapperStyle + "'>" + controlHTML + nestedLabel + "</div>";
+
         case UI_CPAD:
         case UI_PAD:
             return "<nav class='control'><ul>" +
@@ -1308,42 +1450,148 @@ var elementHTML = function (data) {
                     "onmouseup='padclick(CENTER, " + id + ", false)' id='pc" + id + "'>OK</a>"
                     : "") +
                 "</nav>";
+
         case UI_SLIDER:
-            return "<div class='range-slider " +
-                (data.hasOwnProperty('vertical') ? " vert-slider " : "") +
-                "'>" +
-                "<input id='sl" + id + "' type='range' min='0' max='100' value='" + data.value + "' " +
-                elementStyle + " class='range-slider__range'><span class='range-slider__value'>" +
-                data.value + "</span></div>";
-        case UI_NUMBER:
-            return "<input style='color:black; " + data.elementStyle + "' id='num" + id +
-                "' type='number' value='" + data.value + "' oninput='numberchange(" + id + ")' />";
-        case UI_TEXT_INPUT:
-            // Safely handle custom styles to prevent "undefined" injecting into the HTML
             var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            var isNested = data.hasOwnProperty('parentControl') && $("#tab" + data.parentControl).length === 0;
             
-            // Proposed useful additions
-            var placeholder = data.hasOwnProperty('placeholder') ? " placeholder='" + data.placeholder + "' " : "";
+            // Strip HTML tags and escape quotes for the tooltip
+            var safeLabel = data.label ? data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            var onClickScript = "this.style.whiteSpace = this.style.whiteSpace === 'nowrap' ? 'normal' : 'nowrap';";
+            
+            // Added onclick script and cursor: pointer
+            var nestedLabel = isNested ? "<div id='input-label-" + id + "' title='" + safeLabel + "' onclick=\"" + onClickScript + "\" style='font-size:14px; text-align: left; margin-bottom:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; width: 100%; cursor: pointer;'>" + data.label + "</div>" : "";
+            var wrapperExtractedStyles = "";
+            var innerStyle = customStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                wrapperExtractedStyles += prop + ": " + val + "; ";
+                return ""; 
+            });
+
+            if (!wrapperExtractedStyles.includes("width")) {
+                wrapperExtractedStyles += "width: 100%; "; 
+            }
+
+            // Build the inner slider HTML
+            var controlHTML = "<div class='range-slider " +
+                (data.hasOwnProperty('vertical') ? " vert-slider " : "") +
+                "' style='width: 100%; max-width: 100%; box-sizing: border-box;'>" +
+                "<input id='sl" + id + "' type='range' min='0' max='100' value='" + data.value + "' " +
+                "style='" + innerStyle + "' class='range-slider__range'><span class='range-slider__value'>" +
+                data.value + "</span></div>";
+
+            // Wrapper inherits the extracted layout styles
+            var wrapperStyle = "display: inline-flex; flex-direction: column; align-items: flex-start; vertical-align: bottom; max-width: 100%; " + wrapperExtractedStyles;
+
+            return "<div id='slider-wrapper-" + id + "' style='" + wrapperStyle + "'>" + nestedLabel + controlHTML + "</div>";
+
+        case UI_NUMBER:
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            var isNested = data.hasOwnProperty('parentControl') && $("#tab" + data.parentControl).length === 0;
+            
+            // Strip HTML tags and escape quotes so C++ formatting doesn't break the attributes
+            var safeLabel = data.label ? data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            var onClickScript = "this.style.whiteSpace = this.style.whiteSpace === 'nowrap' ? 'normal' : 'nowrap';";
+            
+            // Added onclick script and cursor: pointer
+            var nestedLabel = isNested ? "<div id='input-label-" + id + "' title='" + safeLabel + "' onclick=\"" + onClickScript + "\" style='font-size:14px; text-align: left; margin-bottom:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; width: 100%; cursor: pointer;'>" + data.label + "</div>" : "";
+            var placeholder = " placeholder='" + safeLabel + "' ";
+
+            // Extract layout styles for the wrapper
+            var wrapperExtractedStyles = "";
+            var innerStyle = customStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                wrapperExtractedStyles += prop + ": " + val + "; ";
+                return ""; 
+            });
+
+            if (!wrapperExtractedStyles.includes("width")) {
+                wrapperExtractedStyles += "width: 100%; "; 
+            }
+
+            // Build the number input
+            var controlHTML = "<input id='num" + id + "' type='number' " + placeholder +
+                "style='width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle + "' " +
+                "value='" + data.value + "' oninput='numberchange(" + id + ")' />";
+
+            // Build the flex wrapper
+            var wrapperStyle = "display: inline-flex; flex-direction: column; align-items: flex-start; vertical-align: bottom; max-width: 100%; " + wrapperExtractedStyles;
+
+            return "<div id='number-wrapper-" + id + "' style='" + wrapperStyle + "'>" + nestedLabel + controlHTML + "</div>";
+        
+	case UI_TEXT_INPUT:
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            var isNested = data.hasOwnProperty('parentControl') && $("#tab" + data.parentControl).length === 0;
+            
+            // Strip HTML tags and escape quotes
+            var safeLabel = data.label ? data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            var onClickScript = "this.style.whiteSpace = this.style.whiteSpace === 'nowrap' ? 'normal' : 'nowrap';";
+            
+            // Added onclick script and cursor: pointer
+            var nestedLabel = isNested ? "<div id='input-label-" + id + "' title='" + safeLabel + "' onclick=\"" + onClickScript + "\" style='font-size:14px; text-align: left; margin-bottom:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; width: 100%; cursor: pointer;'>" + data.label + "</div>" : "";
+            var placeholder = " placeholder='" + safeLabel + "' ";
             var readonly = (data.hasOwnProperty('readonly') && data.readonly) ? " readonly " : "";
             var spellcheck = data.hasOwnProperty('spellcheck') && !data.spellcheck ? " spellcheck='false' " : "";
 
+            var wrapperExtractedStyles = "";
+            var innerStyle = customStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                wrapperExtractedStyles += prop + ": " + val + "; ";
+                return ""; 
+            });
+
+            if (!wrapperExtractedStyles.includes("width") && (!data.hasOwnProperty('textarea') || !data.textarea)) {
+                wrapperExtractedStyles += "width: 100%; "; 
+            }
+
+            var controlHTML = "";
+
             if (data.hasOwnProperty('textarea') && data.textarea) {
-                // Default to 4 rows if not specified
                 var rows = data.hasOwnProperty('rows') ? " rows='" + data.rows + "' " : " rows='4' ";
-                // Use cols if provided, otherwise leave blank (will default to 100% width via CSS usually)
                 var cols = data.hasOwnProperty('cols') ? " cols='" + data.cols + "' " : "";
                 
-                return "<textarea id='text" + id + "' " + rows + cols + placeholder + readonly + spellcheck +
-                       "style='color:black; " + customStyle + "' oninput='textchange(" + id + ")'>" + 
+                controlHTML = "<textarea id='text" + id + "' " + rows + cols + placeholder + readonly + spellcheck +
+                       "style='width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle + "' oninput='textchange(" + id + ")'>" + 
                        data.value + "</textarea>";
             } else {
-                return "<input id='text" + id + "' " + inputType + placeholder + readonly + spellcheck +
-                       "style='color:black; " + customStyle + "' value='" + data.value + "' " +
+                var inputType = data.hasOwnProperty('inputType') ? " type='" + data.inputType + "' " : " type='text' ";
+
+                controlHTML = "<input id='text" + id + "' " + inputType + placeholder + readonly + spellcheck +
+                       "style='width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle + "' value='" + data.value + "' " +
                        "oninput='textchange(" + id + ")' />";
             }
-        case UI_SELECT:
-            return "<select style='color:black; " + data.elementStyle + "' id='select" + id +
-                "' onchange='selectchange(" + id + ")' />";
+
+            var wrapperStyle = "display: inline-flex; flex-direction: column; align-items: flex-start; vertical-align: bottom; max-width: 100%; " + wrapperExtractedStyles;
+
+            return "<div id='text-wrapper-" + id + "' style='" + wrapperStyle + "'>" + nestedLabel + controlHTML + "</div>";
+
+       case UI_SELECT:
+            var customStyle = data.hasOwnProperty('elementStyle') ? data.elementStyle : "";
+            var isNested = data.hasOwnProperty('parentControl') && $("#tab" + data.parentControl).length === 0;
+            
+            // Strip HTML tags and escape quotes for the tooltip
+            var safeLabel = data.label ? data.label.replace(/<[^>]*>?/gm, '').replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            var onClickScript = "this.style.whiteSpace = this.style.whiteSpace === 'nowrap' ? 'normal' : 'nowrap';";
+            
+            // Added onclick script and cursor: pointer
+            var nestedLabel = isNested ? "<div id='input-label-" + id + "' title='" + safeLabel + "' onclick=\"" + onClickScript + "\" style='font-size:14px; text-align: left; margin-bottom:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; width: 100%; cursor: pointer;'>" + data.label + "</div>" : "";
+
+            var wrapperExtractedStyles = "";
+            var innerStyle = customStyle.replace(/(?:^|\s)(width|min-width|max-width|margin(?:-[a-z]+)?|float)\s*:\s*([^;]+);?/gi, function(match, prop, val) {
+                wrapperExtractedStyles += prop + ": " + val + "; ";
+                return ""; 
+            });
+
+            if (!wrapperExtractedStyles.includes("width")) {
+                wrapperExtractedStyles += "width: 100%; "; 
+            }
+
+            var controlHTML = "<select id='select" + id + "' " +
+                "style='width: 100%; max-width: 100%; box-sizing: border-box; color:black; " + innerStyle + "' " +
+                "onchange='selectchange(" + id + ")'></select>";
+
+            var wrapperStyle = "display: inline-flex; flex-direction: column; align-items: flex-start; vertical-align: bottom; max-width: 100%; " + wrapperExtractedStyles;
+
+            return "<div id='select-wrapper-" + id + "' style='" + wrapperStyle + "'>" + nestedLabel + controlHTML + "</div>";
+
+
         case UI_GRAPH:
             return "<figure id='graph" + id + "'><figcaption>" + data.label + "</figcaption></figure>";
         case UI_GAUGE:

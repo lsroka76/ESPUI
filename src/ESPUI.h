@@ -264,6 +264,9 @@ void setPanelStyle(Control::ControlId_t id, const char *style, int clientId = -1
     void setOnWsConnectCallback(void (*callback)()) {
       on_ws_connect = callback;
     }
+    void setOnWsCustomCmdCallback(void (*callback)(uint16_t ws_custom_cmd)) {
+      on_ws_custom_cmd = callback;
+    }
 
     // Variables
     const char* ui_title = "ESPUI"; // Store UI Title and Header Name
@@ -349,6 +352,8 @@ protected:
 
     uint32_t    ControlChangeID = 0;
     void (*on_ws_connect)() = nullptr;
+    void (*on_ws_custom_cmd)(uint16_t ws_custom_cmd) = nullptr;
+    
 };
 
 extern ESPUIClass ESPUI;

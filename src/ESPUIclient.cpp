@@ -226,6 +226,15 @@ bool ESPUIclient::onWsEvent(AwsEventType type, void* arg, uint8_t* data, size_t 
                 break;
             }
 
+            if (cmd.equals(F("uicc")))
+            {
+                Serial.println(F("WS_EVT_DATA: uicc."));
+
+                if (ESPUI.on_ws_custom_cmd)
+		  ESPUI.on_ws_custom_cmd(id);
+                break;
+            }
+
             // Serial.println(F("WS_EVT_DATA:Process Control"));
             BasicControl* control = ESPUI.getControl(id);
             if (nullptr == control)
@@ -289,6 +298,10 @@ bool ESPUIclient::SendControlsToClient(uint16_t startidx, ClientUpdateType_t Tra
         else if ((startidx >= ESPUIcontrolMgr.GetControlCount()) && (emptyString.equals(FragmentRequest)))
         {
             // Serial.println(F("ERROR:ESPUIclient:SendControlsToClient: No more controls to send."));
+
+	    if (ESPUI.on_ws_custom_cmd) {
+        	ESPUI.on_ws_custom_cmd(1); 
+    	    }
             Response = true;
             break;
         }
